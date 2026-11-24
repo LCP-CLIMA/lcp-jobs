@@ -27,7 +27,7 @@ It runs offline after the first load. iPhone can erase data for an app that is n
 
 New service calls start from these rates. Change them in Settings; jobs already saved keep their own copy.
 
-- Call-out 4,000 Lek, VAT included: first hour and 15 km one way.
+- First visit (Vizita e parë) 3,000 Lek, VAT included: one hour general check-up. Then 2,000 Lek for each started 30 minutes, and 30 Lek per kilometre of the round trip beyond 15 km one way.
 - 2,000 Lek for each started 30 minutes after the first hour.
 - 30 Lek per kilometre of the round trip beyond that 15 km one-way zone.
 - The WhatsApp pre-check is free.

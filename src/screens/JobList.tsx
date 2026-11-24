@@ -3,7 +3,7 @@ import { isService } from "../lib/defaults";
 import { formatDate } from "../lib/format";
 import { compute } from "../lib/calc";
 import { serviceCompute } from "../lib/service";
-import { isFinished, STATUSES, kindLabel, statusLabel } from "../lib/status";
+import { isFinished, SERVICE_STATUSES, STATUSES, kindLabel, statusLabel } from "../lib/status";
 import type { JobKind, JobRecord, JobStatus } from "../lib/types";
 import { Dialog, Money } from "../ui";
 
@@ -65,7 +65,7 @@ export function JobList({
           <Money value={netOf(job)} />
         </div>
         <div className="meta">
-          {formatDate(job.date) || "No date"} · {statusLabel(job.status)} · {kindLabel(job.kind)}
+          {formatDate(job.date) || "No date"} · {statusLabel(job.status, job.kind)} · {kindLabel(job.kind)}
           {job.kind === "install" ? ` · ${job.size}` : ""}
         </div>
         <div className="meta">{job.address || (job.kind === "install" ? `${job.brand} ${job.model}`.trim() : job.problem)}</div>
@@ -103,9 +103,9 @@ export function JobList({
       </div>
       <div className="chips">
         <button type="button" className={`chip${status === "all" ? " on" : ""}`} onClick={() => setStatus("all")}>All</button>
-        {STATUSES.map((item) => (
+        {(focus === "service" ? SERVICE_STATUSES : STATUSES).map((item) => (
           <button key={item.id} type="button" className={`chip${status === item.id ? " on" : ""}`} onClick={() => setStatus(item.id)}>
-            {item.en}
+            {focus === "service" ? item.sq : item.en}
           </button>
         ))}
       </div>

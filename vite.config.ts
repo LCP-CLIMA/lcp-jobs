@@ -26,6 +26,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        cacheId: "lcp-jobs-v2",
+        cleanupOutdatedCaches: true,
         globPatterns: ["**/*.{js,css,html,svg,png,jpg,woff,woff2,ico}"],
         navigateFallback: "/lcp-jobs/index.html",
       },

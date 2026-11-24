@@ -1,6 +1,8 @@
 import { PAIR, btuFor, pipeName } from "./calc";
 import { todayISO } from "./format";
-import type { InstallJob, JobRecord, Offer, PriceBook, Row, ServiceJob, Settings, Size, WarrantyPackage } from "./types";
+import { inverterLabel } from "./offer";
+import { normalizeServiceStatus } from "./status";
+import type { InstallJob, JobRecord, Offer, OfferSize, PriceBook, RepairOption, Row, ServiceJob, Settings, Size, WarrantyPackage } from "./types";
 
 export const FACTORY_BOOK: PriceBook = {
   labor: { "12k": "10000", "18k": "12000", "24k": "13000" },
@@ -38,13 +40,45 @@ export function defaultSettings(): Settings {
     bottleKg: "10",
     refGpm: "20",
     extraRate: "1500",
-    callOut: "4000",
+    callOut: "3000",
     halfHour: "2000",
     freeKm: "15",
     perExtraKm: "30",
     companyPhone: "",
     warrantyPackages: defaultWarrantyPackages(),
+    extraWarrantyYear: "25000",
+    membershipYear: "6000",
+    liftHour: "10000",
+    hardWallHole: "13000",
+    floorSurcharge: "1000",
+    visitPriceV2: true,
+    repairCatalog: defaultRepairCatalog(),
   };
+}
+
+export function defaultRepairCatalog(): RepairOption[] {
+  const names = [
+    ["kondensator-motorri", "Kondensator motorri"],
+    ["kondensator-ventilatori", "Kondensator ventilatori"],
+    ["mbushje-gaz", "Mbushje me gaz"],
+    ["test-azot", "Test presioni me azot"],
+    ["saldim-rrjedhje", "Gjetje, riparim dhe saldim rrjedhjesh në tuba"],
+    ["kontroll-elektrik", "Kontroll elektrik"],
+    ["kontroll-drenazhi", "Kontroll drenazhi"],
+    ["kontroll-performance", "Kontroll performance"],
+  ] as const;
+  return names.map(([id, name]) => ({ id, name, price: "0", enabled: false }));
+}
+
+export function mergeRepairOptions(saved: RepairOption[] | undefined, catalog = defaultRepairCatalog()): RepairOption[] {
+  const byId = new Map((saved ?? []).map((item) => [item.id, item]));
+  const known = catalog.map((item) => {
+    const prev = byId.get(item.id);
+    if (!prev) return { ...item, enabled: false };
+    return { ...item, name: prev.name || item.name, price: prev.price ?? item.price, enabled: prev.enabled === true };
+  });
+  const extra = (saved ?? []).filter((item) => !catalog.some((entry) => entry.id === item.id));
+  return [...known, ...extra];
 }
 
 export function defaultWarrantyPackages(): WarrantyPackage[] {
@@ -79,12 +113,46 @@ export function createOffer(size: Offer["size"] = ""): Offer {
     address: "",
     date: todayISO(),
     size,
-    lines: [{ id: crypto.randomUUID(), name: size ? `Kondicioner ${size}` : "", qty: "1", price: "" }],
+    lines: [{ id: crypto.randomUUID(), name: inverterLabel(size), qty: "1", price: "" }],
     showVat: false,
     packageIds: [],
-    notes: size === "9k" ? "Kalkulatori rekomandoi 9k. Lista e çmimeve të montimit fillon te 12k." : "",
+    notes: size === "9k" ? "9k përdor të njëjtën kosto pune si 12k: 20,500 Lek." : "",
     createdAt: now,
     updatedAt: now,
+    pricingV2: true,
+    extraWarrantyYears: 0,
+    membershipYears: 1,
+    liftNeeded: false,
+    liftHours: "1",
+    wallType: "tulle",
+    holes: "1",
+    extraPipeM: "0",
+    floor: "0",
+    elevator: true,
+  };
+}
+
+export function normalizeOffer(raw: Partial<Offer> | null | undefined): Offer {
+  const size = (raw?.size ?? "") as OfferSize;
+  const fresh = createOffer(size);
+  if (!raw) return fresh;
+  return {
+    ...fresh,
+    ...raw,
+    size,
+    lines: raw.lines?.length ? raw.lines : fresh.lines,
+    packageIds: raw.packageIds ?? [],
+    showVat: raw.showVat === true,
+    pricingV2: raw.pricingV2 === true,
+    extraWarrantyYears: Math.max(0, Math.floor(raw.extraWarrantyYears ?? 0)),
+    membershipYears: Math.min(10, Math.max(1, Math.floor(raw.membershipYears ?? 1))),
+    liftNeeded: raw.liftNeeded === true,
+    liftHours: raw.liftHours ?? "1",
+    wallType: raw.wallType === "gur" || raw.wallType === "beton" ? raw.wallType : "tulle",
+    holes: raw.holes ?? "1",
+    extraPipeM: raw.extraPipeM ?? "0",
+    floor: raw.floor ?? "0",
+    elevator: raw.elevator !== false,
   };
 }
 
@@ -290,6 +358,7 @@ export function createServiceJob(settings: Settings, id?: string): ServiceJob {
     whatsappLog: "",
     repairAccepted: false,
     repairPrice: "0",
+    repairOptions: mergeRepairOptions(settings.repairCatalog).map((item) => ({ ...item, enabled: false })),
   };
 }
 
@@ -310,7 +379,7 @@ export function exampleService(): ServiceJob {
     repairAccepted: false,
     repairPrice: "0",
     notes:
-      "Sample service call. 10 km is inside the 15 km zone. 75 minutes is the first hour plus one extra half hour: 4,000 + 2,000 Lek. Delete when you no longer need it.",
+      "Sample service call. 10 km is inside the 15 km zone. 75 minutes is the first hour plus one extra half hour: 3,000 + 2,000 Lek. Delete when you no longer need it.",
     createdAt: "2026-11-22T09:10:00.000Z",
     updatedAt: "2026-11-22T09:10:00.000Z",
   };
@@ -323,24 +392,39 @@ export function isService(job: JobRecord): job is ServiceJob {
 export function normalizeSettings(raw: Partial<Settings> | null | undefined): Settings {
   const base = defaultSettings();
   if (!raw) return base;
-  return {
+  const merged: Settings = {
     ...base,
     ...raw,
     labor: { ...base.labor, ...raw.labor },
     package: { ...base.package, ...raw.package },
     pipe: { ...base.pipe, ...raw.pipe },
+    warrantyPackages: raw.warrantyPackages?.length ? raw.warrantyPackages : base.warrantyPackages,
+    repairCatalog: mergeRepairOptions(raw.repairCatalog, base.repairCatalog),
+    extraWarrantyYear: raw.extraWarrantyYear || base.extraWarrantyYear,
+    membershipYear: raw.membershipYear || base.membershipYear,
+    liftHour: raw.liftHour || base.liftHour,
+    hardWallHole: raw.hardWallHole || base.hardWallHole,
+    floorSurcharge: raw.floorSurcharge || base.floorSurcharge,
   };
+  if (raw.visitPriceV2 !== true && (raw.callOut == null || raw.callOut === "" || raw.callOut === "4000")) {
+    merged.callOut = base.callOut;
+  }
+  merged.visitPriceV2 = true;
+  return merged;
 }
 
 export function normalizeJob(raw: Partial<JobRecord> & { kind?: string }): JobRecord {
   if (raw.kind === "service") {
     const base = createServiceJob(defaultSettings(), raw.id);
+    const service = raw as Partial<ServiceJob>;
     return {
       ...base,
-      ...raw,
+      ...service,
       kind: "service",
-      materials: raw.materials ?? base.materials,
-      timerStartedAt: raw.timerStartedAt ?? null,
+      status: normalizeServiceStatus(service.status),
+      materials: service.materials ?? base.materials,
+      timerStartedAt: service.timerStartedAt ?? null,
+      repairOptions: mergeRepairOptions(service.repairOptions),
     };
   }
   const base = createInstallJob(defaultSettings(), raw.id);

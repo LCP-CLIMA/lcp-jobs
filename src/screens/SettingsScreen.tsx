@@ -73,12 +73,39 @@ export function SettingsScreen({
         </button>
       </Section>
 
-      <Section title="Service call rates (tarifat e servisit)" caption="Approved prices, still editable. Call-out 4,000 Lek includes the first hour and 15 km one way. Then 2,000 Lek per started 30 min. Beyond that zone, 30 Lek for each kilometre of the round trip.">
+      <Section title="Service call rates (tarifat e servisit)" caption="Vizita e parë është 3,000 Lek: 1 orë kontroll i përgjithshëm për të kuptuar problemin. Pastaj 2,000 Lek për çdo 30 min të filluara. Pas 15 km vajtje, 30 Lek për çdo kilometër vajtje-ardhje.">
         <div className="stack">
-          <Num label="Call-out base, incl. VAT (dalja, ora e parë + zona)" value={settings.callOut} onChange={(callOut) => update({ callOut })} />
+          <Num label="Vizita e parë, me TVSH (1 orë kontroll i përgjithshëm)" value={settings.callOut} onChange={(callOut) => update({ callOut })} />
           <Num label="Extra per started 30 min, incl. VAT" value={settings.halfHour} onChange={(halfHour) => update({ halfHour })} />
           <Num label="Free km zone, one-way (zona falas)" value={settings.freeKm} onChange={(freeKm) => update({ freeKm })} />
           <Num label="Lek per extra round-trip km, incl. VAT" value={settings.perExtraKm} onChange={(perExtraKm) => update({ perExtraKm })} />
+          <h3>Opsionet e riparimit</h3>
+          <p className="hint">Çmimet e paracaktuara për punët e reja të servisit. 0 do të thotë që duhet një vlerë. Nuk është vënë çmim tregu. Punët e ruajtura mbajnë çmimin e tyre.</p>
+          {(settings.repairCatalog ?? []).map((item) => (
+            <div key={item.id} className="line">
+              <Field label={item.name}>
+                <input
+                  inputMode="decimal"
+                  value={item.price}
+                  onChange={(event) => update({
+                    repairCatalog: settings.repairCatalog.map((option) => option.id === item.id ? { ...option, price: event.target.value } : option),
+                  })}
+                />
+              </Field>
+              {Number(item.price) <= 0 ? <p className="warn">Duhet një vlerë.</p> : null}
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Oferta — çmime shtesë">
+        <div className="stack">
+          <Num label="Garanci shtesë, Lek për vit" value={settings.extraWarrantyYear} onChange={(extraWarrantyYear) => update({ extraWarrantyYear })} />
+          <Num label="Abonim vjetor, Lek për vit me pagesë" value={settings.membershipYear} onChange={(membershipYear) => update({ membershipYear })} />
+          <Num label="Vinç/Lift, Lek për orë" value={settings.liftHour} onChange={(liftHour) => update({ liftHour })} />
+          <Num label="Mur guri ose beton, Lek për gropë" value={settings.hardWallHole} onChange={(hardWallHole) => update({ hardWallHole })} />
+          <p className="warn">Vend i përkohshëm. 1,000 Lek për çdo kat mbi tokë, pa ashensor. Ndryshoje kur ta konfirmosh.</p>
+          <Num label="Pa ashensor, Lek për kat mbi tokë" value={settings.floorSurcharge} onChange={(floorSurcharge) => update({ floorSurcharge })} />
         </div>
       </Section>
 
@@ -91,7 +118,8 @@ export function SettingsScreen({
           <Num label="Package 18k" value={settings.package["18k"]} onChange={(value) => update({ package: { ...settings.package, "18k": value } })} />
           <Num label="Package 24k" value={settings.package["24k"]} onChange={(value) => update({ package: { ...settings.package, "24k": value } })} />
           <Num label="Vacuum + N₂ test" value={settings.vacuum} onChange={(vacuum) => update({ vacuum })} />
-          <Num label="Extra pipe, Lek/m" value={settings.extraRate} onChange={(extraRate) => update({ extraRate })} />
+          <Num label="Extra pipe, Lek/m (Tub shtesë)" value={settings.extraRate} onChange={(extraRate) => update({ extraRate })} />
+          <p className="hint">Përdoret te Tub shtesë në ofertë. Çdo paketë ka 3 m të përfshira. {Number(settings.extraRate) <= 0 ? "Duhet një vlerë." : `Tani ${settings.extraRate} Lek/m.`}</p>
         </div>
       </Section>
 

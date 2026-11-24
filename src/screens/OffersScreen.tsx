@@ -1,30 +1,19 @@
 import { useState } from "react";
-import { lek, num } from "../lib/format";
-import type { Offer, OfferLine, WarrantyPackage } from "../lib/types";
+import { lek } from "../lib/format";
+import { applyOfferSize, offerShareText, quoteOffer, shownAmount, whatsappHref } from "../lib/offer";
+import type { Offer, OfferLine, Settings, WallType } from "../lib/types";
 import { Field, IncomeAmount, Toggle } from "../ui";
 import logo from "../assets/logo.jpg";
 import { COMPANY } from "../lib/company";
 
-function lineTotal(line: OfferLine): number {
-  return num(line.qty) * num(line.price);
-}
-
-export function offerGross(offer: Offer, packages: WarrantyPackage[]): number {
-  const lines = offer.lines.reduce((sum, line) => sum + lineTotal(line), 0);
-  const packs = packages.filter((item) => offer.packageIds.includes(item.id)).reduce((sum, item) => sum + num(item.price), 0);
-  return lines + packs;
-}
-
 export function OfferHost({
   initial,
-  packages,
-  phone,
+  settings,
   onSaved,
   onDelete,
 }: {
   initial: Offer;
-  packages: WarrantyPackage[];
-  phone: string;
+  settings: Settings;
   onSaved: (offer: Offer) => void;
   onDelete: () => void;
 }) {
@@ -32,8 +21,7 @@ export function OfferHost({
   return (
     <OfferEditor
       offer={offer}
-      packages={packages}
-      phone={phone}
+      settings={settings}
       onChange={setOffer}
       onSave={() => {
         const next = { ...offer, updatedAt: new Date().toISOString() };
@@ -47,138 +35,245 @@ export function OfferHost({
 
 export function OfferEditor({
   offer,
-  packages,
-  phone,
+  settings,
   onChange,
   onSave,
   onDelete,
 }: {
   offer: Offer;
-  packages: WarrantyPackage[];
-  phone: string;
+  settings: Settings;
   onChange: (offer: Offer) => void;
   onSave: () => void;
   onDelete: () => void;
 }) {
   const [askDelete, setAskDelete] = useState(false);
-  const gross = offerGross(offer, packages);
-  const net = gross / 1.2;
-  const vat = gross - net;
+  const [notice, setNotice] = useState("");
+  const packages = settings.warrantyPackages ?? [];
+  const quote = quoteOffer(offer, settings, packages);
+  const phone = settings.companyPhone;
+  const years = offer.extraWarrantyYears ?? 0;
   const setLine = (id: string, patch: Partial<OfferLine>) =>
     onChange({ ...offer, lines: offer.lines.map((line) => (line.id === id ? { ...line, ...patch } : line)) });
+  const shareText = offerShareText(offer, settings, packages, phone);
+
+  async function share() {
+    setNotice("");
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Ofertë LCP Clima", text: shareText });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+    await copyText();
+  }
+
+  async function copyText() {
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setNotice("Teksti u kopjua.");
+    } catch {
+      setNotice(shareText);
+    }
+  }
 
   return (
     <div className="stack">
-      <button type="button" className="btn gold full" onClick={onSave}>Save offer (ruaj ofertën)</button>
-      <section className="card stack">
-        <Field label="Customer (klienti)">
-          <input value={offer.customerName} onChange={(event) => onChange({ ...offer, customerName: event.target.value })} />
-        </Field>
-        <Field label="Phone (telefoni)">
-          <input type="tel" value={offer.phone} onChange={(event) => onChange({ ...offer, phone: event.target.value })} />
-        </Field>
-        <Field label="Address (adresa)">
-          <textarea value={offer.address} onChange={(event) => onChange({ ...offer, address: event.target.value })} />
-        </Field>
-        <Field label="Date (data)">
-          <input type="date" value={offer.date} onChange={(event) => onChange({ ...offer, date: event.target.value })} />
-        </Field>
-        <Field label="Unit size (madhësia)">
-          <select value={offer.size} onChange={(event) => onChange({ ...offer, size: event.target.value as Offer["size"] })}>
-            <option value="">—</option>
-            <option value="9k">9k</option>
-            <option value="12k">12k</option>
-            <option value="18k">18k</option>
-            <option value="24k">24k</option>
-          </select>
-        </Field>
-      </section>
-      <section className="card stack">
-        <h2>Prices (çmimet)</h2>
-        <p className="hint">Enter VAT-inclusive amounts. The customer offer hides TVSH until you turn it on. (Çmimet me TVSH. Klienti nuk e sheh TVSH derisa ta ndezësh.)</p>
-        {offer.lines.map((line) => (
-          <div key={line.id} className="line">
-            <Field label="Item (artikulli)">
-              <input value={line.name} onChange={(event) => setLine(line.id, { name: event.target.value })} />
-            </Field>
-            <div className="row">
-              <Field label="Qty (sasia)">
-                <input inputMode="decimal" value={line.qty} onChange={(event) => setLine(line.id, { qty: event.target.value })} />
+      <div className="no-print stack">
+        <button type="button" className="btn gold full" onClick={onSave}>Save offer (ruaj ofertën)</button>
+        <section className="card stack">
+          <Field label="Customer (klienti)">
+            <input value={offer.customerName} onChange={(event) => onChange({ ...offer, customerName: event.target.value })} />
+          </Field>
+          <Field label="Phone (telefoni)">
+            <input type="tel" value={offer.phone} onChange={(event) => onChange({ ...offer, phone: event.target.value })} />
+          </Field>
+          <Field label="Address (adresa)">
+            <textarea value={offer.address} onChange={(event) => onChange({ ...offer, address: event.target.value })} />
+          </Field>
+          <Field label="Date (data)">
+            <input type="date" value={offer.date} onChange={(event) => onChange({ ...offer, date: event.target.value })} />
+          </Field>
+          <Field label="Unit size (madhësia)">
+            <select
+              data-testid="unit-size"
+              value={offer.size}
+              onChange={(event) => onChange(applyOfferSize(offer, event.target.value as Offer["size"]))}
+            >
+              <option value="">—</option>
+              <option value="9k">9k</option>
+              <option value="12k">12k</option>
+              <option value="18k">18k</option>
+              <option value="24k">24k</option>
+            </select>
+          </Field>
+          {offer.size === "9k" ? <p className="hint">9k dhe 12k kanë të njëjtën kosto pune, 20,500 Lek.</p> : null}
+        </section>
+
+        <section className="card stack">
+          <h2>Prices (çmimet)</h2>
+          <p className="hint">Enter VAT-inclusive amounts. The customer offer hides TVSH until you turn it on. (Çmimet me TVSH. Klienti nuk e sheh TVSH derisa ta ndezësh.)</p>
+          {offer.lines.map((line, index) => (
+            <div key={line.id} className="line">
+              <Field label="Item (artikulli)">
+                <input data-testid={index === 0 ? "unit-name" : undefined} value={line.name} onChange={(event) => setLine(line.id, { name: event.target.value })} />
               </Field>
-              <Field label="Price, Lek (çmimi)">
-                <input inputMode="decimal" value={line.price} onChange={(event) => setLine(line.id, { price: event.target.value })} />
-              </Field>
+              <div className="row">
+                <Field label="Qty (sasia)">
+                  <input inputMode="decimal" value={line.qty} onChange={(event) => setLine(line.id, { qty: event.target.value })} />
+                </Field>
+                <Field label="Price, Lek (çmimi)">
+                  <input inputMode="decimal" value={line.price} onChange={(event) => setLine(line.id, { price: event.target.value })} />
+                </Field>
+              </div>
+              <div className="line-foot">
+                <IncomeAmount value={numLine(line)} />
+                <button type="button" className="btn danger" onClick={() => onChange({ ...offer, lines: offer.lines.filter((item) => item.id !== line.id) })}>Remove</button>
+              </div>
             </div>
-            <div className="line-foot">
-              <IncomeAmount value={lineTotal(line)} />
-              <button type="button" className="btn danger" onClick={() => onChange({ ...offer, lines: offer.lines.filter((item) => item.id !== line.id) })}>Remove</button>
-            </div>
+          ))}
+          <button type="button" className="btn" onClick={() => onChange({ ...offer, lines: [...offer.lines, { id: crypto.randomUUID(), name: "", qty: "1", price: "" }] })}>
+            Add line (shto rresht)
+          </button>
+        </section>
+
+        <section className="card stack">
+          <h2>Garanci Shtesë dhe Abonim Vjetor</h2>
+          <h3>Garanci Shtesë</h3>
+          <p className="hint">Çdo vit shtesë kushton {lek(Number(settings.extraWarrantyYear || "25000"))} dhe përfshin abonimin vjetor të atij viti falas.</p>
+          <div className="numstep">
+            <button type="button" className="btn" aria-label="Pakëso vitet e garancisë" onClick={() => onChange({ ...offer, extraWarrantyYears: Math.max(0, years - 1), pricingV2: true })}>−</button>
+            <input
+              data-testid="warranty-years"
+              inputMode="numeric"
+              aria-label="Vite garanci shtesë"
+              value={String(years)}
+              onChange={(event) => onChange({ ...offer, extraWarrantyYears: Math.max(0, Math.floor(Number(event.target.value) || 0)), pricingV2: true })}
+            />
+            <button type="button" className="btn" aria-label="Shto vit garancie" onClick={() => onChange({ ...offer, extraWarrantyYears: years + 1, pricingV2: true })}>+</button>
           </div>
-        ))}
-        <button type="button" className="btn" onClick={() => onChange({ ...offer, lines: [...offer.lines, { id: crypto.randomUUID(), name: "", qty: "1", price: "" }] })}>
-          Add line (shto rresht)
-        </button>
-      </section>
+          <h3>Abonim Vjetor</h3>
+          <p className="hint">Çdo instalim përfshin 1 vit abonim vjetor falas (0 Lek): 1 larje dhe 1 mirëmbajtje. Vitet e mbuluara nga garancia shtesë nuk paguhen. Çdo vit me pagesë është {lek(Number(settings.membershipYear || "6000"))}.</p>
+          <Field label="Vite abonimi (1–10)">
+            <select
+              data-testid="membership-years"
+              value={String(offer.membershipYears ?? 1)}
+              onChange={(event) => onChange({ ...offer, membershipYears: Number(event.target.value), pricingV2: true })}
+            >
+              {Array.from({ length: 10 }, (_, index) => index + 1).map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </Field>
+        </section>
+
+        <section className="card stack">
+          <h2>Vinç/Lift</h2>
+          <Toggle label="Duhet vinç / lift" checked={offer.liftNeeded === true} onChange={(liftNeeded) => onChange({ ...offer, liftNeeded, pricingV2: true })} />
+          {offer.liftNeeded ? (
+            <Field label="Orë (10,000 Lek për orë)">
+              <input data-testid="lift-hours" inputMode="decimal" value={offer.liftHours ?? "1"} onChange={(event) => onChange({ ...offer, liftHours: event.target.value, pricingV2: true })} />
+            </Field>
+          ) : null}
+        </section>
+
+        <section className="card stack">
+          <h2>Muri</h2>
+          <Field label="Lloji i murit">
+            <select
+              data-testid="wall-type"
+              value={offer.wallType ?? "tulle"}
+              onChange={(event) => onChange({ ...offer, wallType: event.target.value as WallType, pricingV2: true })}
+            >
+              <option value="tulle">Tullë</option>
+              <option value="gur">Mur guri</option>
+              <option value="beton">Beton</option>
+            </select>
+          </Field>
+          <p className="hint">Tullë pa shtesë. Mur guri dhe Beton: {lek(Number(settings.hardWallHole || "13000"))} për gropë.</p>
+          {offer.wallType === "gur" || offer.wallType === "beton" ? (
+            <Field label="Numri i gropëve">
+              <input data-testid="holes" inputMode="numeric" value={offer.holes ?? "1"} onChange={(event) => onChange({ ...offer, holes: event.target.value, pricingV2: true })} />
+            </Field>
+          ) : null}
+        </section>
+
+        <section className="card stack">
+          <h2>Tub Shtesë</h2>
+          <p className="hint">3 m të përfshira. Çmimi për metër vjen nga Cilësimet ({settings.extraRate ? `${lek(Number(settings.extraRate))}/m` : "pa çmim"}).</p>
+          {Number(settings.extraRate) <= 0 ? <p className="warn">Duhet një vlerë për metër te Cilësimet (Extra pipe).</p> : null}
+          <Field label="Metra shtesë">
+            <input data-testid="extra-pipe" inputMode="decimal" value={offer.extraPipeM ?? "0"} onChange={(event) => onChange({ ...offer, extraPipeM: event.target.value, pricingV2: true })} />
+          </Field>
+        </section>
+
+        <section className="card stack">
+          <h2>Kati</h2>
+          <Field label="Numri i katit (0 ose 1 = përdhese)">
+            <input data-testid="floor" inputMode="numeric" value={offer.floor ?? "0"} onChange={(event) => onChange({ ...offer, floor: event.target.value, pricingV2: true })} />
+          </Field>
+          <div className="seg">
+            <button type="button" className={offer.elevator !== false ? "on" : ""} onClick={() => onChange({ ...offer, elevator: true, pricingV2: true })}>Me ashensor</button>
+            <button type="button" className={offer.elevator === false ? "on" : ""} onClick={() => onChange({ ...offer, elevator: false, pricingV2: true })}>Pa ashensor</button>
+          </div>
+          <p className="hint">Pa ashensor: {lek(Number(settings.floorSurcharge || "1000"))} për çdo kat mbi tokë. Çmim i përkohshëm, ndryshohet te Cilësimet.</p>
+        </section>
+      </div>
+
       <section className="card stack">
-        <h2>Warranty / membership (garancia / abonimi)</h2>
-        {packages.length === 0 ? <p className="hint">Add packages in Settings. (Shto paketa te Cilësimet.)</p> : null}
-        {packages.map((item) => {
-          const on = offer.packageIds.includes(item.id);
-          return (
-            <label key={item.id} className="check-row">
-              <input
-                type="checkbox"
-                checked={on}
-                onChange={(event) => onChange({
-                  ...offer,
-                  packageIds: event.target.checked ? [...offer.packageIds, item.id] : offer.packageIds.filter((id) => id !== item.id),
-                })}
-              />
-              <span>{item.name} · <IncomeAmount value={num(item.price)} /></span>
-            </label>
-          );
-        })}
-        {packages.filter((item) => offer.packageIds.includes(item.id)).map((item) => (
-          <p key={item.id} className="hint">{item.detail}</p>
-        ))}
-      </section>
-      <section className="card stack">
-        <Toggle label="Show TVSH on the offer (shfaq TVSH në ofertë)" checked={offer.showVat} onChange={(showVat) => onChange({ ...offer, showVat })} />
-        <article className="print-sheet">
+        <div className="no-print">
+          <Toggle label="Show TVSH on the offer (shfaq TVSH në ofertë)" checked={offer.showVat} onChange={(showVat) => onChange({ ...offer, showVat })} />
+        </div>
+        <article className="print-sheet" data-testid="offer-sheet">
           <img className="offer-logo" src={logo} alt="L.C.P Clima" />
           <h1>{COMPANY.brand}</h1>
           <p>{phone || "Set the company phone in Settings. (Vendos telefonin te Cilësimet.)"}</p>
           <h2>OFERTË</h2>
           <p><b>Klienti:</b> {offer.customerName || "—"}</p>
+          {offer.phone ? <p><b>Telefoni:</b> {offer.phone}</p> : null}
+          {offer.address ? <p><b>Adresa:</b> {offer.address}</p> : null}
           {offer.size ? <p><b>Madhësia:</b> {offer.size}</p> : null}
-          {offer.lines.filter((line) => line.name || lineTotal(line)).map((line) => (
-            <div key={line.id} className="kv"><span>{line.name || "Artikull"} × {line.qty}</span><IncomeAmount value={offer.showVat ? lineTotal(line) : lineTotal(line) / 1.2} /></div>
-          ))}
-          {packages.filter((item) => offer.packageIds.includes(item.id)).map((item) => (
-            <div key={item.id} className="kv"><span>{item.name}</span><IncomeAmount value={offer.showVat ? num(item.price) : num(item.price) / 1.2} /></div>
+          {quote.lines.map((line) => (
+            <div key={line.key} className="kv">
+              <span>{line.label}{line.detail ? <small className="hint"> {line.detail}</small> : null}{line.needsValue ? <small className="warn"> Duhet një vlerë.</small> : null}</span>
+              <IncomeAmount value={shownAmount(line.gross, offer.showVat)} />
+            </div>
           ))}
           {offer.showVat ? (
             <>
-              <div className="kv"><span>Nëntotali pa TVSH</span><IncomeAmount value={net} /></div>
-              <div className="kv"><span>TVSH 20%</span><b className="money neg">{lek(vat)}</b></div>
-              <div className="kv total-line"><span>Totali me TVSH</span><IncomeAmount value={gross} /></div>
+              <div className="kv"><span>Nëntotali pa TVSH</span><IncomeAmount value={quote.net} /></div>
+              <div className="kv"><span>TVSH 20%</span><b className="money neg">{lek(quote.vat)}</b></div>
+              <div className="kv total-line" data-testid="offer-total" data-gross={String(Math.round(quote.gross))}><span>Totali me TVSH</span><IncomeAmount value={quote.gross} /></div>
             </>
           ) : (
-            <div className="kv total-line"><span>Çmimi</span><IncomeAmount value={net} /></div>
+            <div className="kv total-line" data-testid="offer-total" data-gross={String(Math.round(quote.gross))}><span>Çmimi</span><IncomeAmount value={quote.net} /></div>
           )}
           <div className="sign"><strong>{COMPANY.brand}</strong>{phone ? <div>{phone}</div> : null}</div>
         </article>
-        <button type="button" className="btn" onClick={() => window.print()}>Print offer (printo ofertën)</button>
-        <button type="button" className="btn danger" onClick={() => setAskDelete(true)}>Delete offer (fshi ofertën)</button>
-        {askDelete ? (
-          <div className="callout">
-            <p>Delete this offer? (Fshi këtë ofertë?)</p>
-            <button type="button" className="btn danger" onClick={onDelete}>Yes (po)</button>
-          </div>
-        ) : null}
+        <div className="actions no-print">
+          <button type="button" className="btn" onClick={() => window.print()}>Print offer (printo ofertën)</button>
+          <button type="button" className="btn" onClick={() => void share()}>Share (ndaj)</button>
+          <button type="button" className="btn" onClick={() => void copyText()}>Copy text (kopjo tekstin)</button>
+          <a className="btn" href={whatsappHref(shareText, offer.phone)} target="_blank" rel="noreferrer">WhatsApp</a>
+          {notice ? <p className="hint">{notice}</p> : null}
+          <button type="button" className="btn danger" onClick={() => setAskDelete(true)}>Delete offer (fshi ofertën)</button>
+          {askDelete ? (
+            <div className="callout">
+              <p>Delete this offer? (Fshi këtë ofertë?)</p>
+              <button type="button" className="btn danger" onClick={onDelete}>Yes (po)</button>
+            </div>
+          ) : null}
+        </div>
       </section>
     </div>
   );
+}
+
+function numLine(line: OfferLine): number {
+  const qty = Number.parseFloat((line.qty || "").replace(",", ".")) || 0;
+  const price = Number.parseFloat((line.price || "").replace(",", ".")) || 0;
+  return qty * price;
 }
 
 export function OfferList({ offers, onOpen, onNew }: { offers: Offer[]; onOpen: (id: string) => void; onNew: () => void }) {

@@ -51,8 +51,13 @@ export function serviceCompute(job: ServiceJob, now = Date.now()): ServiceCalc {
 
   const visitFee = (job.includeVisit === false ? 0 : callOut) + (job.includeTime === false ? 0 : timeCharge) + (travelOn ? kmCharge : 0);
   const repair = num(job.repairPrice);
+  let repairOptionsGross = 0;
+  for (const option of job.repairOptions ?? []) {
+    if (!option.enabled) continue;
+    repairOptionsGross += num(option.price);
+  }
   const visitCredit = job.repairAccepted ? visitFee : 0;
-  const sell = job.repairAccepted ? repair + materialsGross + gasGross : visitFee;
+  const sell = job.repairAccepted ? repair + repairOptionsGross + materialsGross + gasGross : visitFee;
   const costGross = transportGross + materialsGross + gasGross;
   const inputVat = transportVat + materialsVat + gasVat;
   const costReal = costGross - inputVat;
@@ -77,6 +82,7 @@ export function serviceCompute(job: ServiceJob, now = Date.now()): ServiceCalc {
     materialsVat,
     gasGross,
     gasVat,
+    repairOptionsGross,
     transportGross,
     transportVat,
     sell,

@@ -4,6 +4,7 @@ import {
   exampleService,
   hitachiExample,
   normalizeJob,
+  normalizeOffer,
   normalizeSettings,
   profitExample,
 } from "./defaults";
@@ -153,14 +154,14 @@ export async function replaceAll(input: { jobs: JobRecord[]; settings: Settings;
   await tx.objectStore("offers").clear();
   for (const job of input.jobs) tx.objectStore("jobs").put(normalizeJob(job));
   for (const photo of input.photos) tx.objectStore("photos").put(photo);
-  for (const offer of input.offers ?? []) tx.objectStore("offers").put(offer);
+  for (const offer of input.offers ?? []) tx.objectStore("offers").put(normalizeOffer(offer));
   tx.objectStore("kv").put({ key: "settings", value: normalizeSettings(input.settings) });
   await tx.done;
 }
 
 export async function getOffers(): Promise<Offer[]> {
   const db = await database();
-  return (await db.getAll("offers")).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return (await db.getAll("offers")).map((offer) => normalizeOffer(offer)).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
 export async function saveOffer(offer: Offer): Promise<void> {

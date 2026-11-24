@@ -34,7 +34,7 @@ export function ServiceForm({ job, onChange }: { job: ServiceJob; onChange: (job
     <div className="stack">
       <section className="card stack">
         <h2>Cost checklist (lista e kostove)</h2>
-        <label className="check-row"><input type="checkbox" checked={job.includeVisit !== false} onChange={(event) => set("includeVisit", event.target.checked)} /><span>Visit fee (tarifa e vizitës) 4,000 Lek</span></label>
+        <label className="check-row"><input type="checkbox" checked={job.includeVisit !== false} onChange={(event) => set("includeVisit", event.target.checked)} /><span>Vizita e parë {lek(num(job.callOut))}</span></label>
         <label className="check-row"><input type="checkbox" checked={job.includeTime !== false} onChange={(event) => set("includeTime", event.target.checked)} /><span>Extra time (koha shtesë) 2,000 Lek / 30 min</span></label>
         <label className="check-row"><input type="checkbox" checked={job.includeTravel !== false} onChange={(event) => set("includeTravel", event.target.checked)} /><span>Travel beyond 15 km (rruga) 30 Lek/km</span></label>
         <label className="check-row"><input type="checkbox" checked={job.includeMaterials !== false} onChange={(event) => set("includeMaterials", event.target.checked)} /><span>Materials at cost (materialet)</span></label>
@@ -73,7 +73,7 @@ export function ServiceForm({ job, onChange }: { job: ServiceJob; onChange: (job
         <input inputMode="numeric" value={job.minutes} onChange={(event) => set("minutes", event.target.value)} />
       </Field>
       <p className="hint">
-        The call-out includes the first hour. After that, each started 30 minutes adds the extra rate.
+        Vizita e parë është 1 orë kontroll i përgjithshëm. Pastaj çdo 30 minuta të filluara shtojnë tarifën.
         This visit: {result.blocks} extra block{result.blocks === 1 ? "" : "s"} = {lek(result.timeCharge)}.
         (Ora e parë është në dalje. Pastaj çdo 30 min të filluara.)
       </p>
@@ -145,9 +145,9 @@ export function ServiceForm({ job, onChange }: { job: ServiceJob; onChange: (job
       <details className="card">
         <summary>Rates and fuel for this call (tarifat)</summary>
         <div className="stack">
-          <p className="hint">New calls copy Settings. These numbers belong to this visit only. Standard call-out is 4,000 Lek, then 2,000 Lek per started 30 min, and 30 Lek per round-trip km beyond 15 km one way.</p>
-          <Field label="Call-out base, incl. VAT (dalja, ora e parë + zona)">
-            <input inputMode="decimal" value={job.callOut} onChange={(event) => set("callOut", event.target.value)} />
+          <p className="hint">New calls copy Settings. These numbers belong to this visit only. Vizita e parë është {lek(num(job.callOut))}: 1 orë kontroll i përgjithshëm. Pastaj 2,000 Lek për çdo 30 min të filluara, dhe 30 Lek për çdo km vajtje-ardhje pas 15 km.</p>
+          <Field label="Vizita e parë, me TVSH (1 orë kontroll)">
+            <input data-testid="call-out" inputMode="decimal" value={job.callOut} onChange={(event) => set("callOut", event.target.value)} />
           </Field>
           <Field label="Extra per started 30 min, incl. VAT">
             <input inputMode="decimal" value={job.halfHour} onChange={(event) => set("halfHour", event.target.value)} />
@@ -183,6 +183,28 @@ export function ServiceForm({ job, onChange }: { job: ServiceJob; onChange: (job
 
       <Section title="Repair (riparimi)" caption="The on-site visit fee is deducted if they accept the repair. If they decline, they pay only the visit. (Nëse e pranon, tarifa e vizitës zbritet. Nëse jo, paguan vetëm vizitën.)">
         <div className="stack">
+          <h3>Opsionet e riparimit</h3>
+          <p className="hint">Çmimet 0 duan një vlerë. Nuk është vënë çmim tregu. Zgjidhen këtu dhe i shtohen çmimit kur riparimi pranohet.</p>
+          {(job.repairOptions ?? []).map((option) => (
+            <div key={option.id} className="line" data-testid={`repair-${option.id}`}>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={option.enabled}
+                  onChange={(event) => set("repairOptions", (job.repairOptions ?? []).map((item) => item.id === option.id ? { ...item, enabled: event.target.checked } : item))}
+                />
+                <span>{option.name}</span>
+              </label>
+              <Field label="Çmimi, Lek">
+                <input
+                  inputMode="decimal"
+                  value={option.price}
+                  onChange={(event) => set("repairOptions", (job.repairOptions ?? []).map((item) => item.id === option.id ? { ...item, price: event.target.value } : item))}
+                />
+              </Field>
+              {num(option.price) <= 0 ? <p className="warn">Duhet një vlerë.</p> : null}
+            </div>
+          ))}
           <Toggle label="Repair accepted (riparimi u pranua)" checked={job.repairAccepted} onChange={(repairAccepted) => set("repairAccepted", repairAccepted)} />
           <Field label="Repair price, incl. VAT (çmimi i riparimit)">
             <input inputMode="decimal" value={job.repairPrice} onChange={(event) => set("repairPrice", event.target.value)} />
@@ -192,7 +214,10 @@ export function ServiceForm({ job, onChange }: { job: ServiceJob; onChange: (job
 
       <Section title="Price breakdown (çmimi)">
         <div className="kv"><span>Visit fee (tarifa e vizitës)</span><b>{lek(result.visitFee)}</b></div>
-        <div className="kv"><span>Call-out (dalja)</span><b>{lek(result.callOut)}</b></div>
+        <div className="kv"><span>Vizita e parë</span><b>{lek(result.callOut)}</b></div>
+        {(job.repairOptions ?? []).filter((option) => option.enabled).map((option) => (
+          <div key={option.id} className="kv"><span>{option.name}</span><b>{lek(num(option.price))}</b></div>
+        ))}
         <div className="kv"><span>Extra time ({result.blocks} × 30 min)</span><b>{lek(result.timeCharge)}</b></div>
         <div className="kv"><span>Extra km, round trip ({result.extraKm} km)</span><b>{lek(result.kmCharge)}</b></div>
         {job.repairAccepted ? <div className="kv"><span>Repair (riparimi)</span><b>{lek(result.repair)}</b></div> : null}

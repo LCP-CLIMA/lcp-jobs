@@ -1,10 +1,12 @@
 export type Size = "12k" | "18k" | "24k";
+export type OfferSize = "9k" | "12k" | "18k" | "24k" | "";
 export type Pipe = "1/4" | "3/8" | "1/2" | "5/8";
 export type Currency = "EUR" | "Lek";
 export type JobStatus = "quote" | "scheduled" | "progress" | "done" | "paid";
 export type JobKind = "install" | "service";
 export type PhotoTag = "before" | "after" | "whatsapp" | "other";
 export type Tone = "pos" | "neg" | "zero";
+export type WallType = "tulle" | "gur" | "beton";
 
 export type Row = {
   id: string;
@@ -126,6 +128,8 @@ export type ServiceJob = JobBase & {
   includeTravel?: boolean;
   includeMaterials?: boolean;
   includeGas?: boolean;
+  /** Missing on older jobs. Added disabled, so saved totals stay the same until one is checked. */
+  repairOptions?: RepairOption[];
 };
 
 export type WarrantyPackage = {
@@ -133,6 +137,14 @@ export type WarrantyPackage = {
   name: string;
   price: string;
   detail: string;
+};
+
+/** Checkbox repair line. A price of 0 means the amount is still unknown. */
+export type RepairOption = {
+  id: string;
+  name: string;
+  price: string;
+  enabled: boolean;
 };
 
 export type OfferLine = {
@@ -148,13 +160,29 @@ export type Offer = {
   phone: string;
   address: string;
   date: string;
-  size: "9k" | "12k" | "18k" | "24k" | "";
+  size: OfferSize;
   lines: OfferLine[];
   showVat: boolean;
   packageIds: string[];
   notes: string;
   createdAt: string;
   updatedAt: string;
+  /**
+   * Offers saved before the extended quote stay false so labour is not added on top of
+   * a price the user already typed. New offers set this true.
+   */
+  pricingV2?: boolean;
+  extraWarrantyYears?: number;
+  /** 1–10. Year 1 is free with every installation. */
+  membershipYears?: number;
+  liftNeeded?: boolean;
+  liftHours?: string;
+  wallType?: WallType;
+  holes?: string;
+  extraPipeM?: string;
+  floor?: string;
+  /** True means Me ashensor (no per-floor surcharge). */
+  elevator?: boolean;
 };
 
 export type JobRecord = InstallJob | ServiceJob;
@@ -194,6 +222,23 @@ export type Settings = {
   perExtraKm: string;
   companyPhone: string;
   warrantyPackages: WarrantyPackage[];
+  /** Lek per extra warranty year. Default 25,000. */
+  extraWarrantyYear: string;
+  /** Lek per paid membership year. Default 6,000. */
+  membershipYear: string;
+  /** Lek per lift hour. Default 10,000. */
+  liftHour: string;
+  /** Lek per hole in stone or concrete. Default 13,000. */
+  hardWallHole: string;
+  /**
+   * Lek per floor above ground when there is no elevator.
+   * 1,000 is an editable placeholder until the owner confirms it.
+   */
+  floorSurcharge: string;
+  /** True after the first-visit price has been moved off the old 4,000 Lek default. */
+  visitPriceV2?: boolean;
+  /** Default repair-option prices copied onto new service jobs. Unknown prices stay 0. */
+  repairCatalog: RepairOption[];
 };
 
 export type PhotoRecord = {
@@ -245,6 +290,7 @@ export type ServiceCalc = {
   materialsVat: number;
   gasGross: number;
   gasVat: number;
+  repairOptionsGross: number;
   transportGross: number;
   transportVat: number;
   sell: number;

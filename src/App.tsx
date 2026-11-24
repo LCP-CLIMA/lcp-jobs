@@ -13,10 +13,11 @@ import { JobList } from "./screens/JobList";
 import { JobScreen } from "./screens/JobScreen";
 import { OfferHost, OfferList } from "./screens/OffersScreen";
 import { PrintView } from "./screens/PrintView";
+import { ProfitScreen } from "./screens/ProfitScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 
 type Tab = "job" | "costs" | "quote" | "photos";
-type MainTab = "btu" | "offers" | "service" | "install";
+type MainTab = "btu" | "offers" | "service" | "install" | "profit";
 type Route =
   | { name: "main"; tab: MainTab }
   | { name: "settings" }
@@ -30,6 +31,7 @@ function parseHash(hash: string): Route {
   if (path === "/offers") return { name: "main", tab: "offers" };
   if (path === "/service") return { name: "main", tab: "service" };
   if (path === "/install") return { name: "main", tab: "install" };
+  if (path === "/profit") return { name: "main", tab: "profit" };
   if (path === "/settings") return { name: "settings" };
   const print = path.match(/^\/print\/([^/]+)(?:\/(internal))?$/);
   if (print) return { name: "print", id: decodeURIComponent(print[1]), mode: print[2] ? "internal" : "quote" };
@@ -161,7 +163,16 @@ export function App() {
             ) : null}
           </>
         )}
-      </header>
+        </header>
+      {route.name === "main" || route.name === "settings" || route.name === "offer" ? (
+        <nav className="tabbar five top no-print">
+          <button type="button" data-testid="tab-btu" className={route.name === "main" && route.tab === "btu" ? "on" : ""} onClick={() => go({ name: "main", tab: "btu" })}>BTU</button>
+          <button type="button" data-testid="tab-offers" className={(route.name === "main" && route.tab === "offers") || route.name === "offer" ? "on" : ""} onClick={() => go({ name: "main", tab: "offers" })}>Offers (oferta)</button>
+          <button type="button" data-testid="tab-service" className={route.name === "main" && route.tab === "service" ? "on" : ""} onClick={() => go({ name: "main", tab: "service" })}>Service (servis)</button>
+          <button type="button" data-testid="tab-install" className={route.name === "main" && route.tab === "install" ? "on" : ""} onClick={() => go({ name: "main", tab: "install" })}>Install (montim)</button>
+          <button type="button" data-testid="tab-profit" className={route.name === "main" && route.tab === "profit" ? "on" : ""} onClick={() => go({ name: "main", tab: "profit" })}>Fitim / Humbje</button>
+        </nav>
+      ) : null}
       <main className="main">
         {!ready && !error ? <p>Opening LCP Clima…</p> : null}
         {error ? <p>{error}</p> : null}
@@ -181,13 +192,15 @@ export function App() {
         {ready && settings && route.name === "main" && route.tab === "install" ? (
           <JobList focus="install" jobs={jobs.filter((job) => job.kind === "install")} onOpen={(id) => commit({ name: "job", id, tab: "job" })} onNewInstall={() => void add("install")} onNewService={() => void add("service")} />
         ) : null}
+        {ready && settings && route.name === "main" && route.tab === "profit" ? (
+          <ProfitScreen jobs={jobs} onOpen={(id) => commit({ name: "job", id, tab: "job" })} />
+        ) : null}
         {ready && settings && route.name === "offer" ? (
           offers.some((offer) => offer.id === route.id) ? (
             <OfferHost
               key={route.id}
               initial={offers.find((offer) => offer.id === route.id)!}
-              packages={settings.warrantyPackages ?? []}
-              phone={settings.companyPhone}
+              settings={settings}
               onSaved={(offer) => {
                 void saveOffer(offer);
                 setOffers((list) => list.map((item) => (item.id === offer.id ? offer : item)));
@@ -256,14 +269,6 @@ export function App() {
           </div>
           <div className="side">Price (çmimi)<IncomeAmount value={price} /></div>
         </div>
-      ) : null}
-      {route.name === "main" || route.name === "settings" || route.name === "offer" ? (
-        <nav className="tabbar four no-print">
-          <button type="button" className={route.name === "main" && route.tab === "btu" ? "on" : ""} onClick={() => go({ name: "main", tab: "btu" })}>BTU</button>
-          <button type="button" className={(route.name === "main" && route.tab === "offers") || route.name === "offer" ? "on" : ""} onClick={() => go({ name: "main", tab: "offers" })}>Offers (oferta)</button>
-          <button type="button" className={route.name === "main" && route.tab === "service" ? "on" : ""} onClick={() => go({ name: "main", tab: "service" })}>Service (servis)</button>
-          <button type="button" className={route.name === "main" && route.tab === "install" ? "on" : ""} onClick={() => go({ name: "main", tab: "install" })}>Install (montim)</button>
-        </nav>
       ) : null}
       {pendingNav ? (
         <Dialog title="Unsaved changes (ndryshime të paruajtura)" onClose={() => setPendingNav(null)}>

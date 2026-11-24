@@ -75,7 +75,7 @@ function ServiceReport({ job, phone }: { job: ServiceJob; phone: string }) {
       <p>Kontrolli paraprak në WhatsApp është falas. Klienti dërgon foto ose video para se të dalim.</p>
       {job.whatsappLog ? <p><b>WhatsApp:</b> {job.whatsappLog}</p> : null}
       <p>
-        Tarifa e vizitës diagnostikuese në vend (ora e parë dhe {job.freeKm || "0"} km vajtje) zbritet nga riparimi nëse klienti e pranon riparimin.
+        Vizita e parë është 1 orë kontroll i përgjithshëm për të kuptuar problemin. Ajo zbritet nga riparimi nëse klienti e pranon. Zona falas është {job.freeKm || "0"} km vajtje.
         Nëse nuk e pranon, paguan vetëm vizitën. Km tej zonës llogariten vajtje-ardhje, {lek(num(job.perExtraKm))} për km.
       </p>
       <p><b>Problemi i raportuar:</b> {job.problem || "—"}</p>
@@ -85,6 +85,9 @@ function ServiceReport({ job, phone }: { job: ServiceJob; phone: string }) {
       <p><b>Km vajtje:</b> {job.km || "0"}. Km shtesë vajtje-ardhje: {result.extraKm}.</p>
       {showVat ? <div className="kv"><span>Vizita diagnostikuese</span><b>{lek(result.visitFee)}</b></div> : null}
       {showVat && job.repairAccepted ? <div className="kv"><span>Riparimi</span><b>{lek(result.repair)}</b></div> : null}
+      {showVat && job.repairAccepted ? (job.repairOptions ?? []).filter((option) => option.enabled).map((option) => (
+        <div key={option.id} className="kv"><span>{option.name}</span><b>{lek(num(option.price))}</b></div>
+      )) : null}
       {!job.repairAccepted ? <p>Riparimi nuk u pranua. Paguhet vetëm vizita.</p> : null}
       {showVat && job.repairAccepted ? job.materials.filter((row) => num(row.qty) * num(row.price)).map((row) => (
         <div key={row.id} className="kv"><span>{row.name || "Material"} × {row.qty}</span><b>{lek(num(row.qty) * num(row.price))}</b></div>
