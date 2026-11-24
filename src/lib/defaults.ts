@@ -153,6 +153,7 @@ export function normalizeOffer(raw: Partial<Offer> | null | undefined): Offer {
     extraPipeM: raw.extraPipeM ?? "0",
     floor: raw.floor ?? "0",
     elevator: raw.elevator !== false,
+    customerVisible: raw.customerVisible ?? {},
   };
 }
 
@@ -433,6 +434,7 @@ export function normalizeJob(raw: Partial<JobRecord> & { kind?: string }): JobRe
     ...base,
     ...install,
     kind: "install",
+    status: normalizeServiceStatus(install.status),
     book: {
       labor: { ...base.book.labor, ...install.book?.labor },
       package: { ...base.book.package, ...install.book?.package },

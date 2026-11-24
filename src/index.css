@@ -117,6 +117,8 @@ img { max-width: 100%; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
 .row > * { flex: 1 1 120px; }
 .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.status-filters { flex-wrap: wrap; overflow: visible; }
+.status-filters .chip { white-space: normal; flex: 1 1 46%; text-align: center; }
 .tabs { display: flex; gap: 8px; }
 .tabs .chip { flex: 1; text-align: center; padding: 8px 6px; }
 .chip, .seg button {
@@ -338,6 +340,10 @@ a { color: var(--blue-2); }
 }
 .dialog h2 { margin: 0 0 8px; }
 .total-line { font-size: 1.15rem; }
+.pill.ok { color: var(--pos); }
+.pill.warn { color: #8a5a00; }
+.pill.bad { color: var(--neg); }
+.report-text { white-space: pre-wrap; font: inherit; margin: 0; }
 
 .print-sheet { background: white; color: var(--navy); padding: 8px 4px 24px; }
 .print-sheet h1 { font-family: Fraunces, Georgia, serif; margin: 0; font-size: 1.8rem; }

@@ -108,7 +108,9 @@ describe("service call", () => {
     expect(normalizeJob({ kind: "service", id: "a", status: "done" }).status).toBe("paid");
     expect(normalizeJob({ kind: "service", id: "b", status: "paid" }).status).toBe("paid");
     expect(normalizeJob({ kind: "service", id: "c", status: "scheduled" }).status).toBe("scheduled");
-    expect(normalizeJob({ kind: "install", id: "d", status: "done" }).status).toBe("done");
+    expect(normalizeJob({ kind: "install", id: "d", status: "done" }).status).toBe("paid");
+    expect(normalizeJob({ kind: "install", id: "e", status: "paid" }).status).toBe("paid");
+    expect(normalizeJob({ kind: "install", id: "f", status: "scheduled" }).status).toBe("scheduled");
     const saved = normalizeJob({ kind: "service", id: "old", status: "quote", callOut: "4000" });
     expect(saved.kind === "service" && saved.callOut).toBe("4000");
     expect(defaultSettings().callOut).toBe("3000");

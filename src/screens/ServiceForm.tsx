@@ -5,6 +5,7 @@ import { lek, num } from "../lib/format";
 import { compressImage, newPhoto } from "../lib/photos";
 import { liveMinutes, serviceCompute } from "../lib/service";
 import type { PhotoRecord, ServiceJob } from "../lib/types";
+import { ChargeCheck } from "./ChargeCheck";
 import { CostAmount, Field, IncomeAmount, Money, Section, Toggle } from "../ui";
 
 function formatClock(minutes: number, running: boolean): string {
@@ -171,6 +172,8 @@ export function ServiceForm({ job, onChange }: { job: ServiceJob; onChange: (job
           <Toggle label="L.C.P CLIMA is VAT-registered" checked={job.vatReg} onChange={(value) => set("vatReg", value)} />
         </div>
       </details>
+
+      <ChargeCheck job={job} onChange={onChange} />
 
       <Section title="WhatsApp pre-check (kontrolli falas në WhatsApp)" caption="Free. The customer sends photos or a short video before you drive out. Log it here and attach those files. (Falas. Klienti dërgon foto ose video.)">
         <div className="stack">

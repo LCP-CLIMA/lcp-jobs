@@ -22,14 +22,10 @@ export function normalizeServiceStatus(status: string | undefined): JobStatus {
   return "quote";
 }
 
-export function statusLabel(id: JobStatus, kind?: JobKind): string {
-  if (kind === "service") {
-    const mapped = id === "done" ? "paid" : id;
-    const service = SERVICE_STATUSES.find((item) => item.id === mapped);
-    if (service) return `${service.sq} (${service.en})`;
-  }
-  const s = STATUSES.find((x) => x.id === id);
-  return s ? `${s.en} (${s.sq})` : id;
+export function statusLabel(id: JobStatus, _kind?: JobKind): string {
+  const mapped = id === "done" ? "paid" : id;
+  const service = SERVICE_STATUSES.find((item) => item.id === mapped);
+  return service ? `${service.sq} (${service.en})` : id;
 }
 
 export function isFinished(status: JobStatus): boolean {

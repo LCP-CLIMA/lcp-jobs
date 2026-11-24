@@ -4,7 +4,7 @@ import { saveJob } from "../lib/db";
 import { formatDate, mapsUrl } from "../lib/format";
 import { compute } from "../lib/calc";
 import { serviceCompute } from "../lib/service";
-import { isFinished, SERVICE_STATUSES, STATUSES } from "../lib/status";
+import { isFinished, SERVICE_STATUSES } from "../lib/status";
 import type { InstallJob, JobRecord, JobStatus, ServiceJob } from "../lib/types";
 import { Field, ProfitHero, Toggle } from "../ui";
 import { Calculator } from "./Calculator";
@@ -119,14 +119,14 @@ export function JobScreen({
         <div className="stack">
           <ProfitHero net={service ? serviceCompute(job, now).net : compute(job).net} />
           <div className="stepper" role="group" aria-label="Status">
-            {(service ? SERVICE_STATUSES : STATUSES).map((status) => (
+            {SERVICE_STATUSES.map((status) => (
               <button key={status.id} type="button" className={job.status === status.id ? "on" : ""} onClick={() => {
                 const next = { ...job, status: status.id as JobStatus } as JobRecord;
                 setJob(next);
                 if (isFinished(status.id)) void persist(next).then(() => onFinished());
               }}>
-                <strong>{service ? status.sq : status.en}</strong>
-                <small>{service ? status.en : status.sq}</small>
+                <strong>{status.sq}</strong>
+                <small>{status.en}</small>
               </button>
             ))}
           </div>

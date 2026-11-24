@@ -87,6 +87,16 @@ export function shownAmount(gross: number, showVat: boolean): number {
   return showVat ? gross : gross / 1.2;
 }
 
+/** Missing means the customer still sees the line. Membership lines share one switch. */
+export function showToCustomer(offer: Offer, key: string): boolean {
+  const stored = key === "member-free" || key === "member-paid" ? "membership" : key;
+  return offer.customerVisible?.[stored] !== false;
+}
+
+export function setCustomerVisible(offer: Offer, key: string, shown: boolean): Offer {
+  return { ...offer, customerVisible: { ...offer.customerVisible, [key]: shown } };
+}
+
 function wallLabel(wall: WallType): string {
   if (wall === "gur") return "Mur guri";
   if (wall === "beton") return "Beton";
@@ -199,15 +209,20 @@ export function quoteOffer(offer: Offer, settings: Settings, packages: WarrantyP
   return { lines, gross, net, vat };
 }
 
+export function customerLines(offer: Offer, settings: Settings, packages: WarrantyPackage[] = []): QuoteLine[] {
+  return quoteOffer(offer, settings, packages).lines.filter((line) => showToCustomer(offer, line.key));
+}
+
 export function offerShareText(offer: Offer, settings: Settings, packages: WarrantyPackage[], phone: string): string {
   const quote = quoteOffer(offer, settings, packages);
-  const rows = quote.lines.map((line) => {
+  const rows = customerLines(offer, settings, packages).map((line) => {
     const detail = line.detail ? ` — ${line.detail}` : "";
     return `${line.label}: ${lek(shownAmount(line.gross, offer.showVat))}${detail}`;
   });
-  const total = offer.showVat
+  const showVatBreakdown = offer.showVat && showToCustomer(offer, "vat");
+  const total = showVatBreakdown
     ? [`Nëntotali pa TVSH: ${lek(quote.net)}`, `TVSH 20%: ${lek(quote.vat)}`, `Totali me TVSH: ${lek(quote.gross)}`]
-    : [`Çmimi: ${lek(quote.net)}`];
+    : [offer.showVat ? `Totali me TVSH: ${lek(quote.gross)}` : `Çmimi: ${lek(quote.net)}`];
   return [
     "LCP Clima",
     phone || "",

@@ -9,7 +9,8 @@ On-device data stays in IndexedDB (jobs, photos, offers, settings), with Setting
 - Fitim / Humbje lists every installation and service job by date, with profit in green, loss in red, and a running total.
 - BTU guide for Shkodër recommends 9k/12k/18k/24k and can start an offer or an installation. The BTU tab itself is unchanged.
 - Offers: choosing a size renames the item to `Kondicioner Inverter … BTU` and sets Kosto pune (9k and 12k 20,500, 18k 22,500, 24k 23,500 Lek, from the saved package prices). Garanci shtesë is 25,000 Lek per year and includes abonim vjetor for that year. Every install includes 1 year of abonim vjetor free; further years are 6,000 Lek and are not charged when the free year or the extra warranty already covers them. Vinç/Lift is 10,000 Lek per hour. Tullë is free; Mur guri and Beton are 13,000 Lek per gropë. Tub shtesë shows 3 m included and uses the existing extra-pipe price (1,500 Lek/m). Pa ashensor adds the per-floor placeholder. Print, Share, copy, and WhatsApp use the same LCP Clima sheet and the TVSH toggle.
-- Service statuses are Ofertë, E planifikuar, Në proces, and Përfunduar dhe paguar. Saved `done` and `paid` both read as the last one. Install jobs still keep Done and Paid separate.
+- Each offer line has **Shfaq te klienti**, on by default and saved with the offer. Unchecked lines stay in the total and drop off the customer print, share, copy and WhatsApp text. If every line is hidden, the customer sees one total.
+- Install and Service lists filter only by Ofertë, E planifikuar, Në proces, and Përfunduar dhe paguar. Both kinds use those four statuses. Saved Done and Paid read as the last one.
 - Service jobs have repair option lines. Prices you did not have stay 0 and are marked “Duhet një vlerë”. Vizita e parë for new jobs is 3,000 Lek (one hour). A saved job keeps its own call-out. Settings still on the old 4,000 default move to 3,000 once. After the first hour, 2,000 Lek / 30 min and 30 Lek/km beyond 15 km are unchanged.
 - Customer price for an installation is still the VAT-inclusive unit price plus the package. No markup.
 - Costs show in red. Income and profit show in green.
@@ -22,7 +23,8 @@ On-device data stays in IndexedDB (jobs, photos, offers, settings), with Setting
 
 ## Publish
 
-- Production base path is `/lcp-jobs/`. The service worker cache id is `lcp-jobs-v2` so phones pick up this update.
+- Service jobs have Kontroll Sistemi / Ngarkesa. Readings stay on the job. Temperatures are °C only. Diagnosis is guidance; the nameplate wins. Importo raport Fieldpiece reads a Job Link PDF or photo on the phone and asks the tech to confirm each value. The label map is in `src/lib/fieldpiece.ts`.
+- Production base path is `/lcp-jobs/`. The service worker cache id is `lcp-jobs-v3` so phones pick up this update. OCR files are cached after the first photo import.
 - GitHub Pages: https://lcp-clima.github.io/lcp-jobs/
 
 ## Next

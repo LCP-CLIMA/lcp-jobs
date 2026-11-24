@@ -130,6 +130,33 @@ export type ServiceJob = JobBase & {
   includeGas?: boolean;
   /** Missing on older jobs. Added disabled, so saved totals stay the same until one is checked. */
   repairOptions?: RepairOption[];
+  /** Field readings for the system charge check. Missing on older jobs. */
+  chargeReadings?: ChargeReading[];
+};
+
+export type ChargeRefrigerant = "R32" | "R410A" | "R22";
+export type ChargeMode = "cooling" | "heating";
+export type ChargeMetering = "exv" | "capillary" | "txv";
+export type PressureUnit = "bar" | "psi";
+
+export type ChargeReading = {
+  id: string;
+  at: string;
+  refrigerant: ChargeRefrigerant;
+  mode: ChargeMode;
+  metering: ChargeMetering;
+  pressureUnit: PressureUnit;
+  suctionPressure: string;
+  liquidPressure: string;
+  suctionTemp: string;
+  liquidTemp: string;
+  returnAir: string;
+  supplyAir: string;
+  outdoorAmbient: string;
+  wetBulb: string;
+  compressorAmps: string;
+  ratedAmps: string;
+  lineSetM: string;
 };
 
 export type WarrantyPackage = {
@@ -183,6 +210,12 @@ export type Offer = {
   floor?: string;
   /** True means Me ashensor (no per-floor surcharge). */
   elevator?: boolean;
+  /**
+   * Customer offer visibility by line key. Missing means shown.
+   * False keeps the amount in the total but hides the line on print, share, copy and WhatsApp.
+   * Membership lines use the key "membership". The VAT breakdown uses "vat".
+   */
+  customerVisible?: Record<string, boolean>;
 };
 
 export type JobRecord = InstallJob | ServiceJob;

@@ -3,6 +3,7 @@ import { COMPANY } from "../lib/company";
 import { compute } from "../lib/calc";
 import { isService } from "../lib/defaults";
 import { formatDate, lek, num } from "../lib/format";
+import { evaluateReading } from "../lib/charge";
 import { serviceCompute } from "../lib/service";
 import { statusLabel } from "../lib/status";
 import type { InstallJob, JobRecord, ServiceJob } from "../lib/types";
@@ -95,6 +96,17 @@ function ServiceReport({ job, phone }: { job: ServiceJob; phone: string }) {
       {showVat && job.repairAccepted && result.gasGross ? <div className="kv"><span>Gaz, {job.refG} g</span><b>{lek(result.gasGross)}</b></div> : null}
       {showVat && job.repairAccepted ? <div className="kv"><span>Zbritje e tarifës së vizitës</span><b>−{Math.round(result.visitCredit).toLocaleString("en-US")} Lek</b></div> : null}
       <PriceLines showVat={showVat} net={result.netRev} vat={result.outVat} total={result.sell} />
+      {(job.chargeReadings ?? []).slice(0, 1).map((reading) => {
+        const charge = evaluateReading(reading);
+        return (
+          <div key={reading.id}>
+            <h2>Kontroll Sistemi / Ngarkesa</h2>
+            <p>{charge.techSummary}</p>
+            <h3>Shpjegim për klientin</h3>
+            <p>{charge.customerText}</p>
+          </div>
+        );
+      })}
       <CompanyFoot phone={phone} />
     </article>
   );

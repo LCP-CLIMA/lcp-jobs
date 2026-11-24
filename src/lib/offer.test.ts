@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyOfferSize, inverterLabel, membershipBreakdown, quoteOffer } from "./offer";
+import { applyOfferSize, customerLines, inverterLabel, membershipBreakdown, offerShareText, quoteOffer, setCustomerVisible } from "./offer";
 import { createOffer, defaultSettings, defaultWarrantyPackages, normalizeOffer } from "./defaults";
 import type { Offer } from "./types";
 
@@ -87,6 +87,31 @@ describe("offer quote", () => {
     expect(lifted.lines.find((line) => line.key === "labor")?.gross).toBe(22500);
     expect(lifted.lines.find((line) => line.key === "floor")?.gross).toBe(0);
     expect(quoteOffer(createOffer("24k"), settings).lines.find((line) => line.key === "labor")?.gross).toBe(23500);
+  });
+
+  it("keeps hidden lines in the total and drops them from the customer text", () => {
+    const settings = defaultSettings();
+    const offer = setCustomerVisible({ ...createOffer("12k"), showVat: true, extraWarrantyYears: 1 }, "labor", false);
+    const full = quoteOffer(offer, settings);
+    const shown = customerLines(offer, settings);
+    expect(full.gross).toBe(20500 + 25000);
+    expect(shown.some((line) => line.key === "labor")).toBe(false);
+    expect(shown.some((line) => line.key === "warranty")).toBe(true);
+    const text = offerShareText(offer, settings, [], "");
+    expect(text).not.toContain("Kosto pune");
+    expect(text).toContain("Garanci shtesë");
+    expect(text).toContain("45,500 Lek");
+    const hidden = ["labor", "warranty", "membership", "lift", "wall", "pipe", "floor", "vat"].reduce(
+      (next, key) => setCustomerVisible(next, key, false),
+      { ...createOffer("12k"), showVat: true, lines: [{ id: "unit", name: "Kondicioner Inverter 12000 BTU", qty: "1", price: "10000" }] },
+    );
+    const hiddenToo = setCustomerVisible(hidden, "unit", false);
+    const quiet = offerShareText(hiddenToo, settings, [], "");
+    expect(quiet).not.toContain("Kondicioner");
+    expect(quiet).not.toContain("Kosto pune");
+    expect(quiet).not.toContain("TVSH 20%");
+    expect(quiet).toContain("Totali me TVSH");
+    expect(quoteOffer(hiddenToo, settings).gross).toBe(10000 + 20500);
   });
 
   it("marks a missing extra-pipe price instead of inventing one", () => {

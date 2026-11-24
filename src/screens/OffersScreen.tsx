@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { lek } from "../lib/format";
-import { applyOfferSize, offerShareText, quoteOffer, shownAmount, whatsappHref } from "../lib/offer";
+import { applyOfferSize, customerLines, offerShareText, quoteOffer, setCustomerVisible, shownAmount, showToCustomer, whatsappHref } from "../lib/offer";
 import type { Offer, OfferLine, Settings, WallType } from "../lib/types";
 import { Field, IncomeAmount, Toggle } from "../ui";
 import logo from "../assets/logo.jpg";
@@ -50,6 +50,8 @@ export function OfferEditor({
   const [notice, setNotice] = useState("");
   const packages = settings.warrantyPackages ?? [];
   const quote = quoteOffer(offer, settings, packages);
+  const visible = customerLines(offer, settings, packages);
+  const showVatBreakdown = offer.showVat && showToCustomer(offer, "vat");
   const phone = settings.companyPhone;
   const years = offer.extraWarrantyYears ?? 0;
   const setLine = (id: string, patch: Partial<OfferLine>) =>
@@ -109,6 +111,10 @@ export function OfferEditor({
             </select>
           </Field>
           {offer.size === "9k" ? <p className="hint">9k dhe 12k kanë të njëjtën kosto pune, 20,500 Lek.</p> : null}
+          <div className="line">
+            <div className="spread"><strong>Kosto pune</strong>{offer.size ? <IncomeAmount value={quote.lines.find((line) => line.key === "labor")?.gross ?? 0} /> : <span className="hint">Zgjidh madhësinë</span>}</div>
+            <ShowCustomer offer={offer} lineKey="labor" onChange={onChange} />
+          </div>
         </section>
 
         <section className="card stack">
@@ -131,6 +137,7 @@ export function OfferEditor({
                 <IncomeAmount value={numLine(line)} />
                 <button type="button" className="btn danger" onClick={() => onChange({ ...offer, lines: offer.lines.filter((item) => item.id !== line.id) })}>Remove</button>
               </div>
+              <ShowCustomer offer={offer} lineKey={line.id} onChange={onChange} />
             </div>
           ))}
           <button type="button" className="btn" onClick={() => onChange({ ...offer, lines: [...offer.lines, { id: crypto.randomUUID(), name: "", qty: "1", price: "" }] })}>
@@ -141,6 +148,7 @@ export function OfferEditor({
         <section className="card stack">
           <h2>Garanci Shtesë dhe Abonim Vjetor</h2>
           <h3>Garanci Shtesë</h3>
+          <ShowCustomer offer={offer} lineKey="warranty" onChange={onChange} />
           <p className="hint">Çdo vit shtesë kushton {lek(Number(settings.extraWarrantyYear || "25000"))} dhe përfshin abonimin vjetor të atij viti falas.</p>
           <div className="numstep">
             <button type="button" className="btn" aria-label="Pakëso vitet e garancisë" onClick={() => onChange({ ...offer, extraWarrantyYears: Math.max(0, years - 1), pricingV2: true })}>−</button>
@@ -154,6 +162,7 @@ export function OfferEditor({
             <button type="button" className="btn" aria-label="Shto vit garancie" onClick={() => onChange({ ...offer, extraWarrantyYears: years + 1, pricingV2: true })}>+</button>
           </div>
           <h3>Abonim Vjetor</h3>
+          <ShowCustomer offer={offer} lineKey="membership" onChange={onChange} />
           <p className="hint">Çdo instalim përfshin 1 vit abonim vjetor falas (0 Lek): 1 larje dhe 1 mirëmbajtje. Vitet e mbuluara nga garancia shtesë nuk paguhen. Çdo vit me pagesë është {lek(Number(settings.membershipYear || "6000"))}.</p>
           <Field label="Vite abonimi (1–10)">
             <select
@@ -170,6 +179,7 @@ export function OfferEditor({
 
         <section className="card stack">
           <h2>Vinç/Lift</h2>
+          <ShowCustomer offer={offer} lineKey="lift" onChange={onChange} />
           <Toggle label="Duhet vinç / lift" checked={offer.liftNeeded === true} onChange={(liftNeeded) => onChange({ ...offer, liftNeeded, pricingV2: true })} />
           {offer.liftNeeded ? (
             <Field label="Orë (10,000 Lek për orë)">
@@ -180,6 +190,7 @@ export function OfferEditor({
 
         <section className="card stack">
           <h2>Muri</h2>
+          <ShowCustomer offer={offer} lineKey="wall" onChange={onChange} />
           <Field label="Lloji i murit">
             <select
               data-testid="wall-type"
@@ -201,6 +212,7 @@ export function OfferEditor({
 
         <section className="card stack">
           <h2>Tub Shtesë</h2>
+          <ShowCustomer offer={offer} lineKey="pipe" onChange={onChange} />
           <p className="hint">3 m të përfshira. Çmimi për metër vjen nga Cilësimet ({settings.extraRate ? `${lek(Number(settings.extraRate))}/m` : "pa çmim"}).</p>
           {Number(settings.extraRate) <= 0 ? <p className="warn">Duhet një vlerë për metër te Cilësimet (Extra pipe).</p> : null}
           <Field label="Metra shtesë">
@@ -210,6 +222,7 @@ export function OfferEditor({
 
         <section className="card stack">
           <h2>Kati</h2>
+          <ShowCustomer offer={offer} lineKey="floor" onChange={onChange} />
           <Field label="Numri i katit (0 ose 1 = përdhese)">
             <input data-testid="floor" inputMode="numeric" value={offer.floor ?? "0"} onChange={(event) => onChange({ ...offer, floor: event.target.value, pricingV2: true })} />
           </Field>
@@ -222,9 +235,19 @@ export function OfferEditor({
       </div>
 
       <section className="card stack">
-        <div className="no-print">
+        <div className="no-print stack">
           <Toggle label="Show TVSH on the offer (shfaq TVSH në ofertë)" checked={offer.showVat} onChange={(showVat) => onChange({ ...offer, showVat })} />
+          <ShowCustomer offer={offer} lineKey="vat" onChange={onChange} />
+          <h2>Brenda (të gjitha rreshtat)</h2>
+          <p className="hint">Këto rreshta mbeten në totalin edhe kur nuk shfaqen te klienti.</p>
+          {quote.lines.map((line) => (
+            <div key={line.key} className="kv" data-testid={`internal-${line.key}`}>
+              <span>{line.label}</span>
+              <IncomeAmount value={shownAmount(line.gross, offer.showVat)} />
+            </div>
+          ))}
         </div>
+        <p className="hint no-print">Si e sheh klienti</p>
         <article className="print-sheet" data-testid="offer-sheet">
           <img className="offer-logo" src={logo} alt="L.C.P Clima" />
           <h1>{COMPANY.brand}</h1>
@@ -234,18 +257,20 @@ export function OfferEditor({
           {offer.phone ? <p><b>Telefoni:</b> {offer.phone}</p> : null}
           {offer.address ? <p><b>Adresa:</b> {offer.address}</p> : null}
           {offer.size ? <p><b>Madhësia:</b> {offer.size}</p> : null}
-          {quote.lines.map((line) => (
-            <div key={line.key} className="kv">
+          {visible.map((line) => (
+            <div key={line.key} className="kv" data-testid={`customer-${line.key}`}>
               <span>{line.label}{line.detail ? <small className="hint"> {line.detail}</small> : null}{line.needsValue ? <small className="warn"> Duhet një vlerë.</small> : null}</span>
               <IncomeAmount value={shownAmount(line.gross, offer.showVat)} />
             </div>
           ))}
-          {offer.showVat ? (
+          {showVatBreakdown ? (
             <>
-              <div className="kv"><span>Nëntotali pa TVSH</span><IncomeAmount value={quote.net} /></div>
-              <div className="kv"><span>TVSH 20%</span><b className="money neg">{lek(quote.vat)}</b></div>
+              <div className="kv" data-testid="customer-vat"><span>Nëntotali pa TVSH</span><IncomeAmount value={quote.net} /></div>
+              <div className="kv" data-testid="customer-vat-line"><span>TVSH 20%</span><b className="money neg">{lek(quote.vat)}</b></div>
               <div className="kv total-line" data-testid="offer-total" data-gross={String(Math.round(quote.gross))}><span>Totali me TVSH</span><IncomeAmount value={quote.gross} /></div>
             </>
+          ) : offer.showVat ? (
+            <div className="kv total-line" data-testid="offer-total" data-gross={String(Math.round(quote.gross))}><span>Totali me TVSH</span><IncomeAmount value={quote.gross} /></div>
           ) : (
             <div className="kv total-line" data-testid="offer-total" data-gross={String(Math.round(quote.gross))}><span>Çmimi</span><IncomeAmount value={quote.net} /></div>
           )}
@@ -267,6 +292,21 @@ export function OfferEditor({
         </div>
       </section>
     </div>
+  );
+}
+
+function ShowCustomer({ offer, lineKey, onChange }: { offer: Offer; lineKey: string; onChange: (offer: Offer) => void }) {
+  const shown = showToCustomer(offer, lineKey);
+  return (
+    <label className="check-row">
+      <input
+        type="checkbox"
+        data-testid={`show-${lineKey}`}
+        checked={shown}
+        onChange={(event) => onChange(setCustomerVisible(offer, lineKey, event.target.checked))}
+      />
+      <span>Shfaq te klienti</span>
+    </label>
   );
 }
 

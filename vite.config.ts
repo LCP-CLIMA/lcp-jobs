@@ -26,10 +26,21 @@ export default defineConfig({
         ],
       },
       workbox: {
-        cacheId: "lcp-jobs-v2",
+        cacheId: "lcp-jobs-v3",
         cleanupOutdatedCaches: true,
-        globPatterns: ["**/*.{js,css,html,svg,png,jpg,woff,woff2,ico}"],
+        globPatterns: ["**/*.{js,mjs,css,html,svg,png,jpg,woff,woff2,ico,wasm}"],
         navigateFallback: "/lcp-jobs/index.html",
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/npm\/(tesseract\.js@|tesseract\.js-core@|@tesseract\.js-data\/)/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "lcp-ocr",
+              expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
     }),
   ],
