@@ -8,10 +8,11 @@ function monthKey(date: string): string {
   return /^\d{4}-\d{2}/.test(date) ? date.slice(0, 7) : "";
 }
 
+const MONTHS = ["janar", "shkurt", "mars", "prill", "maj", "qershor", "korrik", "gusht", "shtator", "tetor", "nëntor", "dhjetor"];
+
 function monthLabel(key: string): string {
   const [year, month] = key.split("-");
-  const date = new Date(Number(year), Number(month) - 1, 1);
-  return date.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  return `${MONTHS[Number(month) - 1] ?? month} ${year}`;
 }
 
 export function ProfitScreen({ jobs, onOpen }: { jobs: JobRecord[]; onOpen: (id: string) => void }) {
@@ -36,23 +37,24 @@ export function ProfitScreen({ jobs, onOpen }: { jobs: JobRecord[]; onOpen: (id:
   return (
     <div className="stack" data-testid="profit-screen">
       <section className="card stack">
-        <h2>Fitim / humbje <small className="hint">Profit &amp; loss. Read only.</small></h2>
+        <h2>Fitim / humbje</h2>
+        <p className="hint">Vetëm për lexim.</p>
         <label className="field">
-          <span>Muaji <small className="hint">Month</small></span>
+          <span>Muaji</span>
           <select data-testid="profit-month" value={month} onChange={(event) => setMonth(event.target.value)}>
             {months.map((key) => <option key={key} value={key}>{monthLabel(key)}</option>)}
           </select>
         </label>
-        <div className="kv"><span>Të ardhurat <small>Revenue</small></span><b>{lek(revenue)}</b></div>
-        <div className="kv"><span>Kostoja <small>Cost</small></span><b>{lek(cost)}</b></div>
-        <div className="kv"><span>Fitimi <small>Profit</small></span><Money value={profit} /></div>
-        <div className="kv"><span>Marzhi <small>Margin</small></span><b>{margin.toFixed(1)}%</b></div>
+        <div className="kv"><span>Të ardhurat</span><b>{lek(revenue)}</b></div>
+        <div className="kv"><span>Kostoja</span><b>{lek(cost)}</b></div>
+        <div className="kv"><span>Fitimi</span><Money value={profit} /></div>
+        <div className="kv"><span>Marzhi</span><b>{margin.toFixed(1)}%</b></div>
       </section>
-      {rows.length === 0 ? <p>No saved jobs in this month. (Asnjë punë këtë muaj.)</p> : null}
+      {rows.length === 0 ? <p>Asnjë punë këtë muaj.</p> : null}
       {rows.map(({ job, totals }) => (
         <button key={job.id} type="button" className="job" onClick={() => onOpen(job.id)}>
           <div className="card-top">
-            <strong>{job.customerName || "No name"}</strong>
+            <strong>{job.customerName || "Pa emër"}</strong>
             <Money value={totals.profit} />
           </div>
           <div className="meta">{formatDate(job.date) || "Pa datë"} · {job.kind === "service" ? "Servis" : "Montim"}</div>

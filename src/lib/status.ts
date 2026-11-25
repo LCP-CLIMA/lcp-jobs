@@ -23,8 +23,7 @@ export function normalizeServiceStatus(status: string | undefined): JobStatus {
 }
 
 export function statusLabel(id: JobStatus, _kind?: JobKind): string {
-  const service = SERVICE_STATUSES.find((item) => item.id === id);
-  return service ? `${service.sq} (${service.en})` : id;
+  return SERVICE_STATUSES.find((item) => item.id === id)?.sq ?? id;
 }
 
 export function isFinished(status: JobStatus): boolean {

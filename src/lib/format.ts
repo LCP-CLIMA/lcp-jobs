@@ -32,6 +32,24 @@ export function signedPercent(v: number): { text: string; tone: Tone } {
   return { text: "0.0%", tone: "zero" };
 }
 
+/** Accepts DD/MM/YYYY or YYYY-MM-DD. Returns YYYY-MM-DD, or null when incomplete. */
+export function parseDateInput(text: string): string | null {
+  const trimmed = text.trim();
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  const dmy = /^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/.exec(trimmed);
+  const yyyy = iso?.[1] ?? dmy?.[3];
+  const mm = iso?.[2] ?? dmy?.[2]?.padStart(2, "0");
+  const dd = iso?.[3] ?? dmy?.[1]?.padStart(2, "0");
+  if (!yyyy || !mm || !dd) return null;
+  const year = Number(yyyy);
+  const month = Number(mm);
+  const day = Number(dd);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const check = new Date(year, month - 1, day);
+  if (check.getFullYear() !== year || check.getMonth() !== month - 1 || check.getDate() !== day) return null;
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export function formatDate(iso: string): string {
   if (!iso) return "";
   const day = iso.slice(0, 10);

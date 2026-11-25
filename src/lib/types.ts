@@ -107,6 +107,10 @@ export type JobMoney = {
   vacuumOn: boolean;
   /** On: every cost on this job has a VAT invoice, so that VAT is deducted. */
   purchasesVat: boolean;
+  /** Extra warranty years on the customer offer. Empty means none. */
+  warrantyYears: string;
+  /** Membership years chosen on the offer. Year 1 is included. */
+  membershipYears: string;
 };
 
 export type JobBase = {

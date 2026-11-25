@@ -12,7 +12,8 @@ import { BtuScreen } from "./screens/BtuScreen";
 import { JobForm } from "./screens/JobForm";
 import { JobHome } from "./screens/JobHome";
 import { OfferHost } from "./screens/OffersScreen";
-import { PrintView } from "./screens/PrintView";
+import { CustomerPage } from "./screens/CustomerPage";
+import { jobCustomerView } from "./lib/customerOffer";
 import { ProfitScreen } from "./screens/ProfitScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 
@@ -144,31 +145,28 @@ export function App() {
               <div className="brand-sub">{COMPANY.city} · {COMPANY.nuis}</div>
             </div>
             <span className="spacer" />
-            <button type="button" className="text-btn" onClick={() => go({ name: "settings" })}>Settings</button>
+            <button type="button" className="text-btn" onClick={() => go({ name: "settings" })}>Cilësimet</button>
           </>
         ) : (
           <>
-            <button type="button" className="icon-btn" onClick={() => go({ name: "main", tab: route.name === "offer" ? "offers" : "jobs" })}>Back</button>
+            <button type="button" className="icon-btn" onClick={() => go({ name: "main", tab: route.name === "offer" || route.name === "print" ? "offers" : "jobs" })}>Mbrapa</button>
             <img className="brand-logo small" src={logo} alt="" />
-            <h1>{route.name === "settings" ? "Settings (cilësimet)" : route.name === "print" ? "Print (printo)" : current?.customerName || "Job"}</h1>
+            <h1>{route.name === "settings" ? "Cilësimet" : route.name === "print" ? "Oferta" : current?.customerName || "Puna"}</h1>
             <span className="spacer" />
-            <button type="button" className="text-btn" onClick={() => go({ name: "settings" })}>Settings</button>
-            {route.name === "print" ? (
-              <button type="button" className="text-btn" onClick={() => window.print()}>Print</button>
-            ) : null}
+            <button type="button" className="text-btn" onClick={() => go({ name: "settings" })}>Cilësimet</button>
           </>
         )}
         </header>
-      <nav className="tabbar four top no-print">
+      {route.name === "print" ? null : <nav className="tabbar four top no-print">
         <button type="button" data-testid="tab-btu" className={route.name === "main" && route.tab === "btu" ? "on" : ""} onClick={() => go({ name: "main", tab: "btu" })}>BTU</button>
-        <button type="button" data-testid="tab-offers" className={offerTab ? "on" : ""} onClick={() => go({ name: "main", tab: "offers" })}>Ofertë<small>Offer</small></button>
-        <button type="button" data-testid="tab-jobs" className={jobsTab ? "on" : ""} onClick={() => go({ name: "main", tab: "jobs" })}>Servis & montim<small>Service & install</small></button>
-        <button type="button" data-testid="tab-profit" className={route.name === "main" && route.tab === "profit" ? "on" : ""} onClick={() => go({ name: "main", tab: "profit" })}>Fitim / humbje<small>Profit & loss</small></button>
-      </nav>
-      <p className="build-tag no-print" data-testid="app-version">{APP_VERSION}</p>
+        <button type="button" data-testid="tab-offers" className={offerTab ? "on" : ""} onClick={() => go({ name: "main", tab: "offers" })}>Ofertë</button>
+        <button type="button" data-testid="tab-jobs" className={jobsTab ? "on" : ""} onClick={() => go({ name: "main", tab: "jobs" })}>Servis & montim</button>
+        <button type="button" data-testid="tab-profit" className={route.name === "main" && route.tab === "profit" ? "on" : ""} onClick={() => go({ name: "main", tab: "profit" })}>Fitim / humbje</button>
+      </nav>}
+      {route.name === "print" ? null : <p className="build-tag no-print" data-testid="app-version">{APP_VERSION}</p>}
       <main className="main">
-        {!ready && !error ? <p>Opening LCP Clima…</p> : null}
-        {error ? <p>{error}</p> : null}
+        {!ready && !error ? <p>Po hapet LCP Clima…</p> : null}
+        {error ? <p>Nuk u hap ruajtja në këtë telefon.</p> : null}
         {ready && settings && route.name === "main" && route.tab === "btu" ? <BtuScreen onUse={(size, target) => void useSize(size, target)} /> : null}
         {ready && settings && route.name === "main" && route.tab === "offers" ? (
           <JobHome mode="offer" jobs={jobs} offers={offers} onOpen={(id) => commit({ name: "job", id })} onOpenOffer={(id) => commit({ name: "offer", id })} onNew={add} />
@@ -197,7 +195,7 @@ export function App() {
                 });
               }}
             />
-          ) : <p>This offer is not on this phone.</p>
+          ) : <p>Kjo ofertë nuk është në këtë telefon.</p>
         ) : null}
         {ready && settings && route.name === "settings" ? (
           <SettingsScreen
@@ -213,42 +211,52 @@ export function App() {
             }}
           />
         ) : null}
-        {ready && route.name === "job" && current ? (
+        {ready && settings && route.name === "job" && current ? (
           <JobForm
             key={current.id}
             initial={current}
-            book={settings?.priceBook ?? []}
+            book={settings.priceBook ?? []}
+            settings={settings}
             draft={draft?.id === current.id}
             onDirty={onDirty}
             onSaved={(job) => {
               setJobs((list) => list.some((item) => item.id === job.id) ? list.map((item) => (item.id === job.id ? job : item)) : [job, ...list]);
               setDraft(null);
             }}
+            onPrinted={(job) => {
+              setJobs((list) => list.some((item) => item.id === job.id) ? list.map((item) => (item.id === job.id ? job : item)) : [job, ...list]);
+              setDraft(null);
+              dirtyRef.current = false;
+              commit({ name: "print", id: job.id, mode: "quote" });
+            }}
             onDelete={() => setPendingDelete(current.id)}
           />
         ) : null}
-        {ready && route.name === "job" && !current ? <p>This job is not on this phone. (Kjo punë nuk është këtu.)</p> : null}
-        {ready && route.name === "print" && current ? (
-          <>
-            <p className="hint no-print">On iPhone, tap Print, then use Share in the preview to save a PDF. (Printo, pastaj Share për PDF.)</p>
-            <PrintView job={current} mode={route.mode} phone={settings?.companyPhone ?? ""} />
-          </>
+        {ready && route.name === "job" && !current ? <p>Kjo punë nuk është në këtë telefon.</p> : null}
+        {ready && settings && route.name === "print" && current ? (
+          <CustomerPage
+            {...jobCustomerView(current, settings)}
+            customerName={current.customerName}
+            phone={current.phone}
+            address={current.address}
+            companyPhone={settings.companyPhone}
+          />
         ) : null}
       </main>
       {pendingNav ? (
-        <Dialog title="Unsaved changes (ndryshime të paruajtura)" onClose={() => setPendingNav(null)}>
-          <p>Leave without saving? (Dil pa i ruajtur?)</p>
+        <Dialog title="Ndryshime të paruajtura" onClose={() => setPendingNav(null)}>
+          <p>Të dalësh pa i ruajtur?</p>
           <div className="actions">
             <button type="button" className="btn danger" onClick={() => { const next = pendingNav; dirtyRef.current = false; if (draft && route.name === "job" && draft.id === route.id) setDraft(null); setPendingNav(null); commit(next); }}>
-              Leave (dil)
+              Dil
             </button>
-            <button type="button" className="btn" onClick={() => setPendingNav(null)}>Stay (rri)</button>
+            <button type="button" className="btn" onClick={() => setPendingNav(null)}>Rri</button>
           </div>
         </Dialog>
       ) : null}
       {pendingDelete ? (
-        <Dialog title="Delete this job? (Fshi këtë punë?)" onClose={() => setPendingDelete(null)}>
-          <p>The job and its photos will be removed from this phone. This cannot be undone.</p>
+        <Dialog title="Të fshihet kjo punë?" onClose={() => setPendingDelete(null)}>
+          <p>Puna dhe fotot hiqen nga ky telefon. Nuk kthehen.</p>
           <div className="actions">
             <button
               type="button"
@@ -272,9 +280,9 @@ export function App() {
                 });
               }}
             >
-              Delete (fshi)
+              Fshi
             </button>
-            <button type="button" className="btn" onClick={() => setPendingDelete(null)}>Cancel (anulo)</button>
+            <button type="button" className="btn" onClick={() => setPendingDelete(null)}>Anulo</button>
           </div>
         </Dialog>
       ) : null}

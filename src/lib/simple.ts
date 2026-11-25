@@ -35,6 +35,8 @@ export function emptyMoney(): JobMoney {
     payWage: false,
     vacuumOn: false,
     purchasesVat: true,
+    warrantyYears: "0",
+    membershipYears: "1",
   };
 }
 

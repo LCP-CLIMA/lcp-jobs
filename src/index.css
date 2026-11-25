@@ -74,8 +74,8 @@ img { max-width: 100%; }
 .spacer { flex: 1; }
 
 .tabbar.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.tabbar.four button { font-size: 0.72rem; line-height: 1.15; padding: 8px 4px; min-height: 56px; }
-.tabbar.four button small { display: block; font-weight: 500; font-size: 0.62rem; opacity: 0.75; }
+.tabbar.four button { font-size: 14px; line-height: 1.2; padding: 8px 4px; min-height: 56px; white-space: normal; }
+.tabbar.four button small { display: none; }
 .sell-input { font-size: 1.35rem; font-weight: 700; }
 .job-pad { padding-bottom: 220px; }
 .sticky-profit {
@@ -113,7 +113,8 @@ img { max-width: 100%; }
   font-weight: 650;
 }
 .tabbar button.on { color: var(--navy); box-shadow: inset 0 -3px 0 var(--amber); }
-.build-tag { margin: 0; padding: 2px 12px 0; text-align: right; font-size: 0.72rem; color: var(--muted); }
+.build-tag, .version-label { margin: 0; padding: 4px 12px 0; text-align: right; font-size: 14px; color: var(--muted); }
+.version-label { text-align: left; padding: 0; font-weight: 700; color: var(--navy); }
 .numstep { display: flex; gap: 8px; align-items: center; }
 .numstep button { min-width: 48px; }
 .numstep input { text-align: center; max-width: 96px; }
@@ -159,7 +160,7 @@ img { max-width: 100%; }
   box-shadow: 0 8px 24px rgba(16, 40, 28, 0.04);
 }
 .card h2 { margin: 0 0 8px; font-size: 1.05rem; }
-.caption, .hint, .fine { color: var(--muted); font-size: 0.86rem; line-height: 1.4; }
+.caption, .hint, .fine, .meta { color: var(--muted); font-size: 14px; line-height: 1.4; }
 .job {
   width: 100%;
   text-align: left;
@@ -179,7 +180,7 @@ img { max-width: 100%; }
 .tabs { flex-wrap: wrap; }
 .tabs .chip { flex: 1 1 42%; }
 .job strong { font-size: 1.05rem; }
-.meta { color: var(--muted); font-size: 0.86rem; }
+.meta { color: var(--muted); font-size: 14px; }
 .card-top, .spread { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 
 .money { font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -204,7 +205,7 @@ img { max-width: 100%; }
 .hero-detail { margin-top: 8px; color: var(--muted); font-size: 0.9rem; }
 
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.field > span, .line-name { font-size: 0.92rem; font-weight: 650; }
+.field > span, .line-name { font-size: 16px; font-weight: 650; }
 input, select, textarea {
   width: 100%;
   min-height: 48px;

@@ -14,12 +14,13 @@
     <title>LCP Clima</title>
     <script>
       (function () {
-        var VERSION = "v6-2026-11-25";
+        var VERSION = "v7-2026-11-25";
         try { if (localStorage.getItem("lcp-build") === VERSION) return; } catch (e) {}
         function finish() {
           try { localStorage.setItem("lcp-build", VERSION); } catch (e) {}
-          if (!sessionStorage.getItem("lcp-purged")) {
-            sessionStorage.setItem("lcp-purged", "1");
+          var flag = "lcp-purged-" + VERSION;
+          if (!sessionStorage.getItem(flag)) {
+            sessionStorage.setItem(flag, "1");
             location.reload();
           }
         }
@@ -40,7 +41,7 @@
   </head>
   <body>
     <div id="root"></div>
-    <p id="lcp-version" style="margin:0;padding:6px 12px 10px;text-align:center;font:12px sans-serif;color:#4a5f75">v6 · 25 Nov</p>
+    <p id="lcp-version" style="margin:0;padding:6px 12px 10px;text-align:center;font:14px sans-serif;color:#4a5f75">v7 · 25 Nov</p>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

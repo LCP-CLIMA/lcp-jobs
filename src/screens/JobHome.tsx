@@ -23,16 +23,16 @@ export function JobHome({
   return (
     <div className="stack" data-testid={mode === "offer" ? "offer-home" : "job-home"}>
       {mode === "offer" ? (
-        <button type="button" className="btn gold" onClick={() => onNew("install", "quote")}>Ofertë e re <small>New offer</small></button>
+        <button type="button" className="btn gold" onClick={() => onNew("install", "quote")}>Ofertë e re</button>
       ) : (
         <>
-          <button type="button" className="btn gold" data-testid="new-install" onClick={() => onNew("install", "scheduled")}>Montim i ri <small>New installation</small></button>
-          <button type="button" className="btn" data-testid="new-service" onClick={() => onNew("service", "scheduled")}>Servis i ri <small>New service</small></button>
+          <button type="button" className="btn gold" data-testid="new-install" onClick={() => onNew("install", "quote")}>Montim i ri</button>
+          <button type="button" className="btn" data-testid="new-service" onClick={() => onNew("service", "quote")}>Servis i ri</button>
         </>
       )}
       <p className="hint">{mode === "offer"
         ? "Ofertat. Kur e pranon, e njëjta punë kalon te Servis & montim."
-        : "Punët e pranuara. Ofertat qëndrojnë te skeda Ofertë."}</p>
+        : "Punët e pranuara. Montimi i ri fillon si ofertë."}</p>
       {shown.length === 0 ? <p>{mode === "offer" ? "Ende pa oferta." : "Ende pa punë të pranuara."}</p> : null}
       {shown.map((job) => (
         <button key={job.id} type="button" className="job" onClick={() => onOpen(job.id)}>
@@ -42,7 +42,7 @@ export function JobHome({
       ))}
       {mode === "offer" && offers.length > 0 ? (
         <>
-          <h2>Oferta të ruajtura më parë <small className="hint">Older offers</small></h2>
+          <h2>Oferta të ruajtura më parë</h2>
           {offers.map((offer) => (
             <button key={offer.id} type="button" className="job" onClick={() => onOpenOffer(offer.id)}>
               <strong>{offer.customerName || "Pa emër"}</strong>

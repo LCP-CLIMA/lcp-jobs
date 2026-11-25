@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { lek, signedLek, signedPercent, toneOf } from "./lib/format";
+import { useEffect, useState, type ReactNode } from "react";
+import { formatDate, lek, parseDateInput, signedLek, signedPercent, toneOf } from "./lib/format";
 import type { Tone } from "./lib/types";
 
 export function Money({ value, large = false }: { value: number; large?: boolean }) {
@@ -30,6 +30,40 @@ export function ProfitHero({ net, detail }: { net: number; detail?: ReactNode })
       <Money value={net} large />
       {detail ? <div className="hero-detail">{detail}</div> : null}
     </div>
+  );
+}
+
+export function DateField({ value, onChange, testId }: { value: string; onChange: (iso: string) => void; testId?: string }) {
+  const [text, setText] = useState(() => formatDate(value));
+  const [focused, setFocused] = useState(false);
+  useEffect(() => {
+    if (!focused) setText(formatDate(value));
+  }, [value, focused]);
+  return (
+    <input
+      data-testid={testId}
+      inputMode="numeric"
+      placeholder="DD/MM/YYYY"
+      autoComplete="off"
+      value={text}
+      onFocus={() => setFocused(true)}
+      onBlur={() => {
+        setFocused(false);
+        const iso = parseDateInput(text);
+        if (iso) {
+          onChange(iso);
+          setText(formatDate(iso));
+        } else if (!text.trim()) onChange("");
+        else setText(formatDate(value));
+      }}
+      onChange={(event) => {
+        const next = event.target.value;
+        setText(next);
+        const iso = parseDateInput(next);
+        if (iso) onChange(iso);
+        else if (!next.trim()) onChange("");
+      }}
+    />
   );
 }
 

@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { lek } from "../lib/format";
-import { applyOfferSize, customerLines, offerShareText, quoteOffer, setCustomerVisible, shownAmount, showToCustomer, whatsappHref } from "../lib/offer";
+import { formatDate, lek } from "../lib/format";
+import { applyOfferSize, customerLines, inverterLabel, quoteOffer, setCustomerVisible, shownAmount, showToCustomer } from "../lib/offer";
 import type { Offer, OfferLine, Settings, WallType } from "../lib/types";
-import { Field, IncomeAmount, Toggle } from "../ui";
+import { CustomerPage } from "./CustomerPage";
+import { DateField, Field, IncomeAmount, Toggle } from "../ui";
 import logo from "../assets/logo.jpg";
 import { COMPANY } from "../lib/company";
 
@@ -47,7 +48,7 @@ export function OfferEditor({
   onDelete: () => void;
 }) {
   const [askDelete, setAskDelete] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [openSheet, setOpenSheet] = useState(false);
   const packages = settings.warrantyPackages ?? [];
   const quote = quoteOffer(offer, settings, packages);
   const visible = customerLines(offer, settings, packages);
@@ -56,48 +57,47 @@ export function OfferEditor({
   const years = offer.extraWarrantyYears ?? 0;
   const setLine = (id: string, patch: Partial<OfferLine>) =>
     onChange({ ...offer, lines: offer.lines.map((line) => (line.id === id ? { ...line, ...patch } : line)) });
-  const shareText = offerShareText(offer, settings, packages, phone);
-
-  async function share() {
-    setNotice("");
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "Ofertë LCP Clima", text: shareText });
-        return;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-      }
-    }
-    await copyText();
-  }
-
-  async function copyText() {
-    try {
-      await navigator.clipboard.writeText(shareText);
-      setNotice("Teksti u kopjua.");
-    } catch {
-      setNotice(shareText);
-    }
+  if (openSheet) {
+    return (
+      <div className="stack">
+        <button type="button" className="btn no-print" onClick={() => setOpenSheet(false)}>Mbrapa te formulari</button>
+        <CustomerPage
+          customerName={offer.customerName}
+          phone={offer.phone}
+          address={offer.address}
+          date={formatDate(offer.date)}
+          description={inverterLabel(offer.size) || offer.lines[0]?.name || "Ofertë"}
+          lines={visible.map((line) => ({ label: line.label, amount: shownAmount(line.gross, offer.showVat), detail: line.detail }))}
+          total={quote.gross}
+          net={quote.net}
+          vat={quote.vat}
+          showVat={showVatBreakdown}
+          companyPhone={phone}
+          tiers={[]}
+        />
+      </div>
+    );
   }
 
   return (
     <div className="stack">
       <div className="no-print stack">
-        <button type="button" className="btn gold full" onClick={onSave}>Save offer (ruaj ofertën)</button>
+        <button type="button" className="btn" data-testid="print-offer" onClick={() => setOpenSheet(true)}>Printo / Shpërndaj ofertën</button>
+        <button type="button" className="btn gold full" onClick={onSave}>Ruaj</button>
         <section className="card stack">
-          <Field label="Customer (klienti)">
+          <Field label="Klienti">
             <input value={offer.customerName} onChange={(event) => onChange({ ...offer, customerName: event.target.value })} />
           </Field>
-          <Field label="Phone (telefoni)">
+          <Field label="Telefoni">
             <input type="tel" value={offer.phone} onChange={(event) => onChange({ ...offer, phone: event.target.value })} />
           </Field>
-          <Field label="Address (adresa)">
+          <Field label="Adresa">
             <textarea value={offer.address} onChange={(event) => onChange({ ...offer, address: event.target.value })} />
           </Field>
-          <Field label="Date (data)">
-            <input type="date" value={offer.date} onChange={(event) => onChange({ ...offer, date: event.target.value })} />
+          <Field label="Data">
+            <DateField value={offer.date} onChange={(date) => onChange({ ...offer, date })} />
           </Field>
-          <Field label="Unit size (madhësia)">
+          <Field label="Madhësia">
             <select
               data-testid="unit-size"
               value={offer.size}
@@ -236,7 +236,7 @@ export function OfferEditor({
 
       <section className="card stack">
         <div className="no-print stack">
-          <Toggle label="Show TVSH on the offer (shfaq TVSH në ofertë)" checked={offer.showVat} onChange={(showVat) => onChange({ ...offer, showVat })} />
+          <Toggle label="Shfaq ndarjen e TVSH në ofertë" checked={offer.showVat} onChange={(showVat) => onChange({ ...offer, showVat })} />
           <ShowCustomer offer={offer} lineKey="vat" onChange={onChange} />
           <h2>Brenda (të gjitha rreshtat)</h2>
           <p className="hint">Këto rreshta mbeten në totalin edhe kur nuk shfaqen te klienti.</p>
@@ -277,16 +277,12 @@ export function OfferEditor({
           <div className="sign"><strong>{COMPANY.brand}</strong>{phone ? <div>{phone}</div> : null}</div>
         </article>
         <div className="actions no-print">
-          <button type="button" className="btn" onClick={() => window.print()}>Print offer (printo ofertën)</button>
-          <button type="button" className="btn" onClick={() => void share()}>Share (ndaj)</button>
-          <button type="button" className="btn" onClick={() => void copyText()}>Copy text (kopjo tekstin)</button>
-          <a className="btn" href={whatsappHref(shareText, offer.phone)} target="_blank" rel="noreferrer">WhatsApp</a>
-          {notice ? <p className="hint">{notice}</p> : null}
-          <button type="button" className="btn danger" onClick={() => setAskDelete(true)}>Delete offer (fshi ofertën)</button>
+          <button type="button" className="btn" onClick={() => setOpenSheet(true)}>Printo / Shpërndaj ofertën</button>
+          <button type="button" className="btn danger" onClick={() => setAskDelete(true)}>Fshi ofertën</button>
           {askDelete ? (
             <div className="callout">
-              <p>Delete this offer? (Fshi këtë ofertë?)</p>
-              <button type="button" className="btn danger" onClick={onDelete}>Yes (po)</button>
+              <p>Të fshihet kjo ofertë?</p>
+              <button type="button" className="btn danger" onClick={onDelete}>Po</button>
             </div>
           ) : null}
         </div>
