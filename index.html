@@ -12,10 +12,36 @@
     <link rel="icon" href="/lcp-jobs/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/lcp-jobs/apple-touch-icon.png" />
     <title>LCP Clima</title>
-    <script type="module" crossorigin src="/lcp-jobs/assets/index-ByJEPdz9.js"></script>
-    <link rel="stylesheet" crossorigin href="/lcp-jobs/assets/index-D2VxPoqr.css">
-  <link rel="manifest" href="/lcp-jobs/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/lcp-jobs/registerSW.js"></script></head>
+    <script>
+      (function () {
+        var VERSION = "v6-2026-11-25";
+        try { if (localStorage.getItem("lcp-build") === VERSION) return; } catch (e) {}
+        function finish() {
+          try { localStorage.setItem("lcp-build", VERSION); } catch (e) {}
+          if (!sessionStorage.getItem("lcp-purged")) {
+            sessionStorage.setItem("lcp-purged", "1");
+            location.reload();
+          }
+        }
+        var jobs = [];
+        if (navigator.serviceWorker) {
+          jobs.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+            return Promise.all(regs.map(function (reg) { return reg.unregister(); }));
+          }));
+        }
+        if (window.caches) {
+          jobs.push(caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (key) { return caches.delete(key); }));
+          }));
+        }
+        Promise.all(jobs).then(finish, finish);
+      })();
+    </script>
+    <script type="module" crossorigin src="/lcp-jobs/assets/index-C8ykbVsB.js"></script>
+    <link rel="stylesheet" crossorigin href="/lcp-jobs/assets/index-BxlhKHAR.css">
+  <link rel="manifest" href="/lcp-jobs/manifest.webmanifest"></head>
   <body>
     <div id="root"></div>
+    <p id="lcp-version" style="margin:0;padding:6px 12px 10px;text-align:center;font:12px sans-serif;color:#4a5f75">v6 · 25 Nov</p>
   </body>
 </html>
