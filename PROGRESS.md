@@ -24,7 +24,7 @@ On-device data stays in IndexedDB (jobs, photos, offers, settings), with Setting
 ## Publish
 
 - Service jobs have Kontroll Sistemi / Ngarkesa. Readings stay on the job. Temperatures are °C only. Diagnosis is guidance; the nameplate wins. Importo raport Fieldpiece reads a Job Link PDF or photo on the phone and asks the tech to confirm each value. The label map is in `src/lib/fieldpiece.ts`.
-- Production base path is `/lcp-jobs/`. The service worker cache id is `lcp-jobs-v3` so phones pick up this update. OCR files are cached after the first photo import.
+- Four tabs, with no shared figures: BTU, Offer (customer quote), Service & installation (buy price, materials, extras, and the selling price you type), Profit & loss (saved jobs for one month). Profit is selling price minus those costs only. The service worker cache id is `lcp-jobs-v4`.
 - GitHub Pages: https://lcp-clima.github.io/lcp-jobs/
 
 ## Next

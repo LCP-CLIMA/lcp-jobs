@@ -1,27 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import logo from "./assets/logo.jpg";
 import { COMPANY } from "./lib/company";
-import { deleteJob, deleteOffer, getOffers, getPhotos, loadApp, putPhoto, readNow, saveJob, saveOffer } from "./lib/db";
-import { createInstallJob, createOffer, createServiceJob, isService } from "./lib/defaults";
-import { applySize, compute } from "./lib/calc";
+import { deleteJob, deleteOffer, getOffers, loadApp, readNow, saveJob, saveOffer } from "./lib/db";
+import { createInstallJob, createOffer, createServiceJob } from "./lib/defaults";
 import type { RecommendSize } from "./lib/btu";
-import { serviceCompute } from "./lib/service";
 import type { JobRecord, Offer, Settings } from "./lib/types";
-import { Dialog, IncomeAmount, Money } from "./ui";
+import { Dialog } from "./ui";
 import { BtuScreen } from "./screens/BtuScreen";
-import { JobList } from "./screens/JobList";
-import { JobScreen } from "./screens/JobScreen";
+import { JobForm } from "./screens/JobForm";
+import { JobHome } from "./screens/JobHome";
 import { OfferHost, OfferList } from "./screens/OffersScreen";
 import { PrintView } from "./screens/PrintView";
 import { ProfitScreen } from "./screens/ProfitScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 
-type Tab = "job" | "costs" | "quote" | "photos";
-type MainTab = "btu" | "offers" | "service" | "install" | "profit";
+type MainTab = "btu" | "offers" | "jobs" | "profit";
 type Route =
   | { name: "main"; tab: MainTab }
   | { name: "settings" }
-  | { name: "job"; id: string; tab: Tab }
+  | { name: "job"; id: string }
   | { name: "offer"; id: string }
   | { name: "print"; id: string; mode: "quote" | "internal" };
 
@@ -29,16 +26,15 @@ function parseHash(hash: string): Route {
   const path = hash.replace(/^#/, "") || "/";
   if (path === "/" || path === "/btu") return { name: "main", tab: "btu" };
   if (path === "/offers") return { name: "main", tab: "offers" };
-  if (path === "/service") return { name: "main", tab: "service" };
-  if (path === "/install") return { name: "main", tab: "install" };
+  if (path === "/service" || path === "/install" || path === "/jobs") return { name: "main", tab: "jobs" };
   if (path === "/profit") return { name: "main", tab: "profit" };
   if (path === "/settings") return { name: "settings" };
   const print = path.match(/^\/print\/([^/]+)(?:\/(internal))?$/);
   if (print) return { name: "print", id: decodeURIComponent(print[1]), mode: print[2] ? "internal" : "quote" };
   const offer = path.match(/^\/offer\/([^/]+)$/);
   if (offer) return { name: "offer", id: decodeURIComponent(offer[1]) };
-  const job = path.match(/^\/job\/([^/]+)(?:\/(costs|quote|photos))?$/);
-  if (job) return { name: "job", id: decodeURIComponent(job[1]), tab: (job[2] as Tab) || "job" };
+  const job = path.match(/^\/job\/([^/]+)/);
+  if (job) return { name: "job", id: decodeURIComponent(job[1]) };
   return { name: "main", tab: "btu" };
 }
 
@@ -47,23 +43,7 @@ function href(route: Route): string {
   if (route.name === "settings") return "#/settings";
   if (route.name === "offer") return `#/offer/${encodeURIComponent(route.id)}`;
   if (route.name === "print") return `#/print/${encodeURIComponent(route.id)}${route.mode === "internal" ? "/internal" : ""}`;
-  const tail = route.tab === "job" ? "" : `/${route.tab}`;
-  return `#/job/${encodeURIComponent(route.id)}${tail}`;
-}
-
-function cloneJob(job: JobRecord): JobRecord {
-  const now = new Date().toISOString();
-  const copy = structuredClone(job);
-  copy.id = crypto.randomUUID();
-  copy.customerName = `${job.customerName || "Job"} (copy)`;
-  copy.status = "quote";
-  copy.createdAt = now;
-  copy.updatedAt = now;
-  if (copy.kind === "service") {
-    copy.timerStartedAt = null;
-    copy.materials = copy.materials.map((row) => ({ ...row, id: crypto.randomUUID() }));
-  }
-  return copy;
+  return `#/job/${encodeURIComponent(route.id)}`;
 }
 
 export function App() {
@@ -109,8 +89,6 @@ export function App() {
   }
 
   const current = route.name === "job" || route.name === "print" ? jobs.find((job) => job.id === route.id) : undefined;
-  const profit = current ? (isService(current) ? serviceCompute(current).net : compute(current).net) : 0;
-  const price = current ? (isService(current) ? serviceCompute(current).sell : compute(current).sell) : 0;
 
   async function useSize(size: RecommendSize, target: "offer" | "install") {
     if (!settings) return;
@@ -122,12 +100,10 @@ export function App() {
       return;
     }
     const created = createInstallJob(settings);
-    const job = size === "9k"
-      ? { ...created, notes: "BTU calculator recommended 9k. The price list used here is 12k, the smallest package." }
-      : applySize(created, size);
+    const job = { ...created, notes: `BTU calculator recommended ${size}.` };
     await saveJob(job);
     setJobs((list) => [job, ...list]);
-    commit({ name: "job", id: job.id, tab: "costs" });
+    commit({ name: "job", id: job.id });
   }
 
   async function add(kind: "install" | "service") {
@@ -135,8 +111,11 @@ export function App() {
     const job = kind === "service" ? createServiceJob(settings) : createInstallJob(settings);
     await saveJob(job);
     setJobs((list) => [job, ...list]);
-    go({ name: "job", id: job.id, tab: "job" });
+    go({ name: "job", id: job.id });
   }
+
+  const jobsTab = route.name === "job" || (route.name === "main" && route.tab === "jobs");
+  const offerTab = route.name === "offer" || (route.name === "main" && route.tab === "offers");
 
   return (
     <div className="app">
@@ -153,7 +132,7 @@ export function App() {
           </>
         ) : (
           <>
-            <button type="button" className="icon-btn" onClick={() => go({ name: "main", tab: current && isService(current) ? "service" : "install" })}>Back</button>
+            <button type="button" className="icon-btn" onClick={() => go({ name: "main", tab: route.name === "offer" ? "offers" : "jobs" })}>Back</button>
             <img className="brand-logo small" src={logo} alt="" />
             <h1>{route.name === "settings" ? "Settings (cilësimet)" : route.name === "print" ? "Print (printo)" : current?.customerName || "Job"}</h1>
             <span className="spacer" />
@@ -164,15 +143,12 @@ export function App() {
           </>
         )}
         </header>
-      {route.name === "main" || route.name === "settings" || route.name === "offer" ? (
-        <nav className="tabbar five top no-print">
-          <button type="button" data-testid="tab-btu" className={route.name === "main" && route.tab === "btu" ? "on" : ""} onClick={() => go({ name: "main", tab: "btu" })}>BTU</button>
-          <button type="button" data-testid="tab-offers" className={(route.name === "main" && route.tab === "offers") || route.name === "offer" ? "on" : ""} onClick={() => go({ name: "main", tab: "offers" })}>Offers (oferta)</button>
-          <button type="button" data-testid="tab-service" className={route.name === "main" && route.tab === "service" ? "on" : ""} onClick={() => go({ name: "main", tab: "service" })}>Service (servis)</button>
-          <button type="button" data-testid="tab-install" className={route.name === "main" && route.tab === "install" ? "on" : ""} onClick={() => go({ name: "main", tab: "install" })}>Install (montim)</button>
-          <button type="button" data-testid="tab-profit" className={route.name === "main" && route.tab === "profit" ? "on" : ""} onClick={() => go({ name: "main", tab: "profit" })}>Fitim / Humbje</button>
-        </nav>
-      ) : null}
+      <nav className="tabbar four top no-print">
+        <button type="button" data-testid="tab-btu" className={route.name === "main" && route.tab === "btu" ? "on" : ""} onClick={() => go({ name: "main", tab: "btu" })}>BTU</button>
+        <button type="button" data-testid="tab-offers" className={offerTab ? "on" : ""} onClick={() => go({ name: "main", tab: "offers" })}>Offer<small>Ofertë</small></button>
+        <button type="button" data-testid="tab-jobs" className={jobsTab ? "on" : ""} onClick={() => go({ name: "main", tab: "jobs" })}>Service &amp; install<small>Servis / montim</small></button>
+        <button type="button" data-testid="tab-profit" className={route.name === "main" && route.tab === "profit" ? "on" : ""} onClick={() => go({ name: "main", tab: "profit" })}>Profit &amp; loss<small>Fitim / humbje</small></button>
+      </nav>
       <main className="main">
         {!ready && !error ? <p>Opening LCP Clima…</p> : null}
         {error ? <p>{error}</p> : null}
@@ -186,14 +162,11 @@ export function App() {
             });
           }} />
         ) : null}
-        {ready && settings && route.name === "main" && route.tab === "service" ? (
-          <JobList focus="service" jobs={jobs.filter((job) => job.kind === "service")} onOpen={(id) => commit({ name: "job", id, tab: "job" })} onNewInstall={() => void add("install")} onNewService={() => void add("service")} />
-        ) : null}
-        {ready && settings && route.name === "main" && route.tab === "install" ? (
-          <JobList focus="install" jobs={jobs.filter((job) => job.kind === "install")} onOpen={(id) => commit({ name: "job", id, tab: "job" })} onNewInstall={() => void add("install")} onNewService={() => void add("service")} />
+        {ready && settings && route.name === "main" && route.tab === "jobs" ? (
+          <JobHome jobs={jobs} onOpen={(id) => commit({ name: "job", id })} onNew={(kind) => void add(kind)} />
         ) : null}
         {ready && settings && route.name === "main" && route.tab === "profit" ? (
-          <ProfitScreen jobs={jobs} onOpen={(id) => commit({ name: "job", id, tab: "job" })} />
+          <ProfitScreen jobs={jobs} onOpen={(id) => commit({ name: "job", id })} />
         ) : null}
         {ready && settings && route.name === "offer" ? (
           offers.some((offer) => offer.id === route.id) ? (
@@ -224,32 +197,17 @@ export function App() {
               void readNow().then((data) => {
                 setJobs(data.jobs);
                 setSettings(data.settings);
-                go({ name: "main", tab: "install" });
+                go({ name: "main", tab: "jobs" });
               });
             }}
           />
         ) : null}
         {ready && route.name === "job" && current ? (
-          <JobScreen
+          <JobForm
             key={current.id}
             initial={current}
-            tab={route.tab}
-            phone={settings?.companyPhone ?? ""}
-            onTab={(tab) => commit({ name: "job", id: current.id, tab })}
             onDirty={onDirty}
-            onFinished={() => commit({ name: "main", tab: current && isService(current) ? "service" : "install" })}
             onSaved={(job) => setJobs((list) => list.map((item) => (item.id === job.id ? job : item)))}
-            onPrint={(mode) => go({ name: "print", id: current.id, mode })}
-            onDuplicate={(job) => {
-              void (async () => {
-                const copy = cloneJob(job);
-                await saveJob(copy);
-                const photos = await getPhotos(job.id);
-                for (const photo of photos) await putPhoto({ ...photo, id: crypto.randomUUID(), jobId: copy.id });
-                setJobs((list) => [copy, ...list]);
-                go({ name: "job", id: copy.id, tab: "job" });
-              })();
-            }}
             onDelete={() => setPendingDelete(current.id)}
           />
         ) : null}
@@ -261,15 +219,6 @@ export function App() {
           </>
         ) : null}
       </main>
-      {route.name === "job" && current ? (
-        <div className="profitbar no-print">
-          <div>
-            <div className="kicker">Profit</div>
-            <Money value={profit} large />
-          </div>
-          <div className="side">Price (çmimi)<IncomeAmount value={price} /></div>
-        </div>
-      ) : null}
       {pendingNav ? (
         <Dialog title="Unsaved changes (ndryshime të paruajtura)" onClose={() => setPendingNav(null)}>
           <p>Leave without saving? (Dil pa i ruajtur?)</p>
@@ -293,7 +242,7 @@ export function App() {
                 void deleteJob(id).then(() => {
                   setJobs((list) => list.filter((job) => job.id !== id));
                   setPendingDelete(null);
-                  go({ name: "main", tab: "install" });
+                  go({ name: "main", tab: "jobs" });
                 });
               }}
             >

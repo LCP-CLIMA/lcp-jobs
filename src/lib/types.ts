@@ -72,6 +72,23 @@ export type CalcInput = {
   includeExtra?: boolean;
 };
 
+/** The only numbers used for profit. What you type here is the whole calculation. */
+export type JobMoney = {
+  unitBuy: string;
+  matPipes: string;
+  matInsulation: string;
+  matCable: string;
+  matBracket: string;
+  matDrain: string;
+  matGas: string;
+  matOther: string;
+  extraTravel: string;
+  extraHelper: string;
+  extraFloor: string;
+  extraOther: string;
+  sellingPrice: string;
+};
+
 export type JobBase = {
   id: string;
   customerName: string;
@@ -84,6 +101,8 @@ export type JobBase = {
   updatedAt: string;
   /** Customer offer shows VAT lines only when this is true. Older jobs stay off. */
   showVatOnQuote?: boolean;
+  /** Present after the simple form is used. Older jobs are filled in once on load. */
+  money?: JobMoney;
 };
 
 export type InstallJob = JobBase &

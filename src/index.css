@@ -73,8 +73,19 @@ img { max-width: 100%; }
 }
 .spacer { flex: 1; }
 
-.tabbar.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.tabbar.five button { font-size: 0.68rem; line-height: 1.15; padding: 8px 2px; min-height: 52px; }
+.tabbar.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.tabbar.four button { font-size: 0.72rem; line-height: 1.15; padding: 8px 4px; min-height: 56px; }
+.tabbar.four button small { display: block; font-weight: 500; font-size: 0.62rem; opacity: 0.75; }
+.sell-input { font-size: 1.35rem; font-weight: 700; }
+.live-totals {
+  position: sticky;
+  bottom: 0;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 -8px 24px rgba(10, 31, 51, 0.08);
+}
 .tabbar {
   display: grid;
   grid-template-columns: 1fr 1fr;

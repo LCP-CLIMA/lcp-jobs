@@ -109,7 +109,7 @@ export function BtuScreen({ onUse }: { onUse: (size: RecommendSize, target: "off
           <button type="button" className="btn gold" onClick={() => onUse(result.size, "offer")}>Use in an offer (përdor në ofertë)</button>
           <button type="button" className="btn" onClick={() => onUse(result.size, "install")}>Use in an installation (përdor në montim)</button>
         </div>
-        {result.size === "9k" ? <p className="hint">9k is the size guide. The installation price list starts at 12k, so that job uses the 12k package until you change it.</p> : null}
+        {result.size === "9k" ? <p className="hint">9k is the size guide. Enter the buy price and the selling price on the job.</p> : null}
       </section>
     </div>
   );

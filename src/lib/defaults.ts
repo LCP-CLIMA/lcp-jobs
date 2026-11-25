@@ -1,6 +1,7 @@
 import { PAIR, btuFor, pipeName } from "./calc";
 import { todayISO } from "./format";
 import { inverterLabel } from "./offer";
+import { emptyMoney, withMoney } from "./simple";
 import { normalizeServiceStatus } from "./status";
 import type { InstallJob, JobRecord, Offer, OfferSize, PriceBook, RepairOption, Row, ServiceJob, Settings, Size, WarrantyPackage } from "./types";
 
@@ -278,6 +279,7 @@ export function createInstallJob(settings: Settings, id?: string): InstallJob {
     refGpm: settings.refGpm,
     refExtraM: "0",
     book,
+    money: emptyMoney(),
   };
 }
 
@@ -360,6 +362,7 @@ export function createServiceJob(settings: Settings, id?: string): ServiceJob {
     repairAccepted: false,
     repairPrice: "0",
     repairOptions: mergeRepairOptions(settings.repairCatalog).map((item) => ({ ...item, enabled: false })),
+    money: emptyMoney(),
   };
 }
 
@@ -426,6 +429,7 @@ export function normalizeJob(raw: Partial<JobRecord> & { kind?: string }): JobRe
       materials: service.materials ?? base.materials,
       timerStartedAt: service.timerStartedAt ?? null,
       repairOptions: mergeRepairOptions(service.repairOptions),
+      money: withMoney({ ...service, kind: "service" }),
     };
   }
   const base = createInstallJob(defaultSettings(), raw.id);
@@ -444,5 +448,6 @@ export function normalizeJob(raw: Partial<JobRecord> & { kind?: string }): JobRe
     trunk: install.trunk?.length ? install.trunk : base.trunk,
     consum: install.consum?.length ? install.consum : base.consum,
     other: install.other?.length ? install.other : base.other,
+    money: withMoney({ ...install, kind: "install" }),
   };
 }
