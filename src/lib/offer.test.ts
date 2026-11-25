@@ -110,7 +110,7 @@ describe("offer quote", () => {
     expect(quiet).not.toContain("Kondicioner");
     expect(quiet).not.toContain("Kosto pune");
     expect(quiet).not.toContain("TVSH 20%");
-    expect(quiet).toContain("Totali me TVSH");
+    expect(quiet).toContain("Çmimi me TVSH");
     expect(quoteOffer(hiddenToo, settings).gross).toBe(10000 + 20500);
   });
 

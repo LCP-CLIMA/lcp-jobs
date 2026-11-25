@@ -8,23 +8,22 @@ export const STATUSES: { id: JobStatus; en: string; sq: string }[] = [
   { id: "paid", en: "Paid", sq: "Paguar" },
 ];
 
-/** Service jobs use these four labels. Done and Paid both become the last one. */
+/** One job moves through these steps. Done and Paid stay separate. */
 export const SERVICE_STATUSES: { id: JobStatus; en: string; sq: string }[] = [
-  { id: "quote", en: "Quote", sq: "Ofertë" },
+  { id: "quote", en: "Offer", sq: "Ofertë" },
   { id: "scheduled", en: "Scheduled", sq: "E planifikuar" },
-  { id: "progress", en: "In Progress", sq: "Në proces" },
-  { id: "paid", en: "Done and Paid", sq: "Përfunduar dhe paguar" },
+  { id: "progress", en: "In progress", sq: "Në proces" },
+  { id: "done", en: "Done", sq: "Përfunduar" },
+  { id: "paid", en: "Paid", sq: "Paguar" },
 ];
 
 export function normalizeServiceStatus(status: string | undefined): JobStatus {
-  if (status === "quote" || status === "scheduled" || status === "progress") return status;
-  if (status === "done" || status === "paid") return "paid";
+  if (status === "quote" || status === "scheduled" || status === "progress" || status === "done" || status === "paid") return status;
   return "quote";
 }
 
 export function statusLabel(id: JobStatus, _kind?: JobKind): string {
-  const mapped = id === "done" ? "paid" : id;
-  const service = SERVICE_STATUSES.find((item) => item.id === mapped);
+  const service = SERVICE_STATUSES.find((item) => item.id === id);
   return service ? `${service.sq} (${service.en})` : id;
 }
 

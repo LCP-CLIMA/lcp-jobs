@@ -83,8 +83,9 @@ export type OfferQuote = {
   vat: number;
 };
 
-export function shownAmount(gross: number, showVat: boolean): number {
-  return showVat ? gross : gross / 1.2;
+/** The customer always sees the VAT-inclusive amount. The TVSH switch only adds a breakdown. */
+export function shownAmount(gross: number, _showVat?: boolean): number {
+  return gross;
 }
 
 /** Missing means the customer still sees the line. Membership lines share one switch. */
@@ -222,7 +223,7 @@ export function offerShareText(offer: Offer, settings: Settings, packages: Warra
   const showVatBreakdown = offer.showVat && showToCustomer(offer, "vat");
   const total = showVatBreakdown
     ? [`Nëntotali pa TVSH: ${lek(quote.net)}`, `TVSH 20%: ${lek(quote.vat)}`, `Totali me TVSH: ${lek(quote.gross)}`]
-    : [offer.showVat ? `Totali me TVSH: ${lek(quote.gross)}` : `Çmimi: ${lek(quote.net)}`];
+    : [`Çmimi me TVSH: ${lek(quote.gross)}`];
   return [
     "LCP Clima",
     phone || "",

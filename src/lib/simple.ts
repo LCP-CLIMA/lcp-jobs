@@ -15,29 +15,91 @@ export function emptyMoney(): JobMoney {
     extraHelper: "",
     extraFloor: "",
     extraOther: "",
+    vacuumCost: "",
     sellingPrice: "",
+    unitSell: "",
+    matPipesSell: "",
+    matCableSell: "",
+    matBracketSell: "",
+    matDrainSell: "",
+    matOtherSell: "",
+    extraTravelSell: "",
+    extraOtherSell: "",
+    targetMargin: "",
+    tiers: [
+      { name: "", sell: "" },
+      { name: "", sell: "" },
+      { name: "", sell: "" },
+    ],
+    size: "",
+    payWage: false,
+    vacuumOn: false,
+    purchasesVat: true,
   };
 }
+
+export const SIZE_LABOR: Record<Exclude<JobMoney["size"], "">, number> = {
+  "9k": 10000,
+  "12k": 10000,
+  "18k": 12000,
+  "24k": 13000,
+};
+
+export const SIZE_PACKAGE: Record<Exclude<JobMoney["size"], "">, number> = {
+  "9k": 20500,
+  "12k": 20500,
+  "18k": 22500,
+  "24k": 23500,
+};
 
 export type MoneyTotals = {
   materials: number;
   extras: number;
   cost: number;
   sell: number;
+  hasSell: boolean;
+  outputVat: number;
+  inputVat: number;
+  vatToPay: number;
+  beforeVat: number;
   profit: number;
   margin: number;
 };
 
-/** Profit is the selling price minus every cost on the form. Nothing else is added. */
+/**
+ * L.C.P is VAT-registered. Prices are VAT-inclusive.
+ * VAT in a gross amount is one sixth. Profit is the selling price, minus VAT still owed, minus costs.
+ */
 export function moneyTotals(money: JobMoney | undefined): MoneyTotals {
   const m = { ...emptyMoney(), ...money };
   const materials = num(m.matPipes) + num(m.matInsulation) + num(m.matCable) + num(m.matBracket) + num(m.matDrain) + num(m.matGas) + num(m.matOther);
-  const extras = num(m.extraTravel) + num(m.extraHelper) + num(m.extraFloor) + num(m.extraOther);
+  const extras = num(m.extraTravel) + (m.payWage ? num(m.extraHelper) : 0) + num(m.extraFloor) + num(m.extraOther) + (m.vacuumOn ? num(m.vacuumCost) : 0);
   const cost = num(m.unitBuy) + materials + extras;
-  const sell = num(m.sellingPrice);
-  const profit = sell - cost;
-  const margin = sell > 0 ? (profit / sell) * 100 : 0;
-  return { materials, extras, cost, sell, profit, margin };
+  const lineSell = num(m.unitSell) + num(m.matPipesSell) + num(m.matCableSell) + num(m.matBracketSell) + num(m.matDrainSell) + num(m.matOtherSell) + num(m.extraTravelSell) + num(m.extraOtherSell);
+  const sellFields = [m.unitSell, m.matPipesSell, m.matCableSell, m.matBracketSell, m.matDrainSell, m.matOtherSell, m.extraTravelSell, m.extraOtherSell];
+  const typedSell = sellFields.some((value) => (value ?? "").trim() !== "");
+  const sell = typedSell ? lineSell : num(m.sellingPrice);
+  const hasSell = typedSell || (m.sellingPrice ?? "").trim() !== "";
+  const outputVat = sell / 6;
+  const inputVat = m.purchasesVat !== false ? cost / 6 : 0;
+  const vatToPay = outputVat - inputVat;
+  const beforeVat = sell - cost;
+  const profit = hasSell ? sell - vatToPay - cost : 0;
+  const netSell = sell / 1.2;
+  const margin = hasSell && netSell > 0 ? (profit / netSell) * 100 : 0;
+  return { materials, extras, cost, sell, hasSell, outputVat, inputVat, vatToPay, beforeVat, profit, margin };
+}
+
+/** Suggested VAT-inclusive selling price for a target margin on the price without VAT. */
+export function suggestSell(cost: number, marginPercent: number): number | null {
+  if (!(cost > 0) || !(marginPercent > 0) || marginPercent >= 100) return null;
+  return cost / (1 - marginPercent / 100);
+}
+
+export function lineMargin(buy: number, sell: number, vatInvoice: boolean): number | null {
+  if (!(sell > 0)) return null;
+  const profit = vatInvoice ? (sell - buy) / 1.2 : sell / 1.2 - buy;
+  return (profit / (sell / 1.2)) * 100;
 }
 
 function n(value: string | undefined): number {
@@ -56,7 +118,7 @@ function lineAmount(row: Row | undefined): number {
 
 function placeMaterial(name: string, amount: number, money: JobMoney) {
   const label = name.toLowerCase();
-  const add = (key: keyof JobMoney) => {
+  const add = (key: "matPipes" | "matInsulation" | "matCable" | "matBracket" | "matDrain" | "matGas" | "matOther") => {
     money[key] = field(num(money[key]) + amount);
   };
   if (/pipe|tub|copper|bakër|baker|1\/4|3\/8|1\/2|5\/8/.test(label)) add("matPipes");

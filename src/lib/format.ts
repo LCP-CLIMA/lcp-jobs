@@ -34,9 +34,14 @@ export function signedPercent(v: number): { text: string; tone: Tone } {
 
 export function formatDate(iso: string): string {
   if (!iso) return "";
-  const d = new Date(iso.length === 10 ? `${iso}T12:00:00` : iso);
+  const day = iso.slice(0, 10);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+  if (match) return `${match[3]}/${match[2]}/${match[1]}`;
+  const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
 export function todayISO(): string {

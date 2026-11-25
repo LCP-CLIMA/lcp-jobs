@@ -3,7 +3,7 @@ import { todayISO } from "./format";
 import { inverterLabel } from "./offer";
 import { emptyMoney, withMoney } from "./simple";
 import { normalizeServiceStatus } from "./status";
-import type { InstallJob, JobRecord, Offer, OfferSize, PriceBook, RepairOption, Row, ServiceJob, Settings, Size, WarrantyPackage } from "./types";
+import type { BookItem, InstallJob, JobRecord, Offer, OfferSize, PriceBook, RepairOption, Row, ServiceJob, Settings, Size, WarrantyPackage } from "./types";
 
 export const FACTORY_BOOK: PriceBook = {
   labor: { "12k": "10000", "18k": "12000", "24k": "13000" },
@@ -54,7 +54,26 @@ export function defaultSettings(): Settings {
     floorSurcharge: "1000",
     visitPriceV2: true,
     repairCatalog: defaultRepairCatalog(),
+    priceBook: defaultPriceBook(),
   };
+}
+
+export function defaultPriceBook(): BookItem[] {
+  const units = (["9k", "12k", "18k", "24k"] as const).map((size) => ({
+    id: `unit-${size}`,
+    name: `Kondicioner ${size}`,
+    group: "unit" as const,
+    buy: "",
+    sell: "",
+    size,
+  }));
+  return [
+    ...units,
+    { id: "pipes", name: "Set tubash + izolim", group: "pipes", buy: "", sell: "" },
+    { id: "cable", name: "Kabllo", group: "cable", buy: "", sell: "" },
+    { id: "bracket", name: "Mbajtëse", group: "bracket", buy: "", sell: "" },
+    { id: "drain", name: "Drenazh", group: "drain", buy: "", sell: "" },
+  ];
 }
 
 export function defaultRepairCatalog(): RepairOption[] {
@@ -404,6 +423,7 @@ export function normalizeSettings(raw: Partial<Settings> | null | undefined): Se
     pipe: { ...base.pipe, ...raw.pipe },
     warrantyPackages: raw.warrantyPackages?.length ? raw.warrantyPackages : base.warrantyPackages,
     repairCatalog: mergeRepairOptions(raw.repairCatalog, base.repairCatalog),
+    priceBook: raw.priceBook?.length ? raw.priceBook : base.priceBook,
     extraWarrantyYear: raw.extraWarrantyYear || base.extraWarrantyYear,
     membershipYear: raw.membershipYear || base.membershipYear,
     liftHour: raw.liftHour || base.liftHour,

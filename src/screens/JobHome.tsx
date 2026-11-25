@@ -1,28 +1,56 @@
-import type { JobRecord } from "../lib/types";
 import { formatDate } from "../lib/format";
+import { statusLabel } from "../lib/status";
+import type { JobRecord, Offer } from "../lib/types";
 
 export function JobHome({
+  mode,
   jobs,
+  offers,
   onOpen,
+  onOpenOffer,
   onNew,
 }: {
+  mode: "offer" | "work";
   jobs: JobRecord[];
+  offers: Offer[];
   onOpen: (id: string) => void;
-  onNew: (kind: "install" | "service") => void;
+  onOpenOffer: (id: string) => void;
+  onNew: (kind: "install" | "service", status: "quote" | "scheduled") => void;
 }) {
-  const ordered = [...jobs].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const shown = jobs
+    .filter((job) => mode === "offer" ? job.status === "quote" : job.status !== "quote")
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   return (
-    <div className="stack" data-testid="job-home">
-      <button type="button" className="btn gold" data-testid="new-install" onClick={() => onNew("install")}>New installation <small>Montim i ri</small></button>
-      <button type="button" className="btn" data-testid="new-service" onClick={() => onNew("service")}>New service <small>Servis i ri</small></button>
-      <p className="hint">Open a job to enter its cost and the price you sell at. Profit is on the Profit &amp; loss tab.</p>
-      {ordered.length === 0 ? <p>No jobs yet. (Ende pa punë.)</p> : null}
-      {ordered.map((job) => (
+    <div className="stack" data-testid={mode === "offer" ? "offer-home" : "job-home"}>
+      {mode === "offer" ? (
+        <button type="button" className="btn gold" onClick={() => onNew("install", "quote")}>Ofertë e re <small>New offer</small></button>
+      ) : (
+        <>
+          <button type="button" className="btn gold" data-testid="new-install" onClick={() => onNew("install", "scheduled")}>Montim i ri <small>New installation</small></button>
+          <button type="button" className="btn" data-testid="new-service" onClick={() => onNew("service", "scheduled")}>Servis i ri <small>New service</small></button>
+        </>
+      )}
+      <p className="hint">{mode === "offer"
+        ? "Ofertat. Kur e pranon, e njëjta punë kalon te Servis & montim."
+        : "Punët e pranuara. Ofertat qëndrojnë te skeda Ofertë."}</p>
+      {shown.length === 0 ? <p>{mode === "offer" ? "Ende pa oferta." : "Ende pa punë të pranuara."}</p> : null}
+      {shown.map((job) => (
         <button key={job.id} type="button" className="job" onClick={() => onOpen(job.id)}>
-          <strong>{job.customerName || "No name"}</strong>
-          <span className="meta">{formatDate(job.date) || "No date"} · {job.kind === "service" ? "Service" : "Installation"}</span>
+          <strong>{job.customerName || "Pa emër"}</strong>
+          <span className="meta">{formatDate(job.date) || "Pa datë"} · {statusLabel(job.status)} · {job.kind === "service" ? "Servis" : "Montim"}{job.money?.size ? ` · ${job.money.size}` : ""}</span>
         </button>
       ))}
+      {mode === "offer" && offers.length > 0 ? (
+        <>
+          <h2>Oferta të ruajtura më parë <small className="hint">Older offers</small></h2>
+          {offers.map((offer) => (
+            <button key={offer.id} type="button" className="job" onClick={() => onOpenOffer(offer.id)}>
+              <strong>{offer.customerName || "Pa emër"}</strong>
+              <span className="meta">{formatDate(offer.date)} · {offer.size || "pa madhësi"}</span>
+            </button>
+          ))}
+        </>
+      ) : null}
     </div>
   );
 }

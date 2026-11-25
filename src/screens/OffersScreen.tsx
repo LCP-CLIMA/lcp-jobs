@@ -272,7 +272,7 @@ export function OfferEditor({
           ) : offer.showVat ? (
             <div className="kv total-line" data-testid="offer-total" data-gross={String(Math.round(quote.gross))}><span>Totali me TVSH</span><IncomeAmount value={quote.gross} /></div>
           ) : (
-            <div className="kv total-line" data-testid="offer-total" data-gross={String(Math.round(quote.gross))}><span>Çmimi</span><IncomeAmount value={quote.net} /></div>
+            <div className="kv total-line" data-testid="offer-total" data-gross={String(Math.round(quote.gross))}><span>Çmimi me TVSH</span><IncomeAmount value={quote.gross} /></div>
           )}
           <div className="sign"><strong>{COMPANY.brand}</strong>{phone ? <div>{phone}</div> : null}</div>
         </article>

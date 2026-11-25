@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { buildBackup, readBackup, shareOrDownload } from "../lib/backup";
 import { askPersist, getAllPhotos, getOffers, replaceAll, saveSettings, storageEstimate } from "../lib/db";
-import type { JobRecord, Settings } from "../lib/types";
+import type { BookItem, JobRecord, Settings } from "../lib/types";
 import { Field, Section, Toggle } from "../ui";
 
 function Num({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
@@ -36,6 +36,30 @@ export function SettingsScreen({
 
   return (
     <div className="stack">
+      <Section title="Lista e çmimeve" caption="Price book. Buy and sell for each saved item. On a job, tap Shto and then edit the amount.">
+        <div className="stack">
+          {(settings.priceBook ?? []).map((item) => (
+            <div key={item.id} className="line">
+              <strong>{item.name}</strong>
+              <div className="row">
+                <Field label="Blerje">
+                  <span className="hint">Buy</span>
+                  <input inputMode="decimal" value={item.buy} onChange={(event) => update({ priceBook: settings.priceBook.map((row) => row.id === item.id ? { ...row, buy: event.target.value } : row) })} />
+                </Field>
+                <Field label="Shitje">
+                  <span className="hint">Sell</span>
+                  <input inputMode="decimal" value={item.sell} onChange={(event) => update({ priceBook: settings.priceBook.map((row) => row.id === item.id ? { ...row, sell: event.target.value } : row) })} />
+                </Field>
+              </div>
+            </div>
+          ))}
+          <button type="button" className="btn" onClick={() => update({ priceBook: [...(settings.priceBook ?? []), { id: crypto.randomUUID(), name: "Artikull i ri", group: "other", buy: "", sell: "" } satisfies BookItem] })}>Shto artikull · Add item</button>
+        </div>
+      </Section>
+      <div className="callout">
+        <strong>TVSH</strong>
+        <p>L.C.P është me TVSH. Fitimi është çmimi me TVSH, minus TVSH-në që i mbetet shtetit, minus kostot. 125,000 − 103,000 = 22,000 para asaj TVSH-je; rreth 3,667 Lek shkojnë te shteti, ndaj fitimi është rreth 18,333.</p>
+      </div>
       <div className="callout">
         <strong>New jobs only</strong>
         These prices are copied when you create a job. Jobs already saved keep their own numbers. (Punët e ruajtura nuk ndryshojnë.)

@@ -2,14 +2,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import logo from "./assets/logo.jpg";
 import { COMPANY } from "./lib/company";
 import { deleteJob, deleteOffer, getOffers, loadApp, readNow, saveJob, saveOffer } from "./lib/db";
-import { createInstallJob, createOffer, createServiceJob } from "./lib/defaults";
+import { createInstallJob, createServiceJob } from "./lib/defaults";
+import { emptyMoney } from "./lib/simple";
 import type { RecommendSize } from "./lib/btu";
 import type { JobRecord, Offer, Settings } from "./lib/types";
 import { Dialog } from "./ui";
 import { BtuScreen } from "./screens/BtuScreen";
 import { JobForm } from "./screens/JobForm";
 import { JobHome } from "./screens/JobHome";
-import { OfferHost, OfferList } from "./screens/OffersScreen";
+import { OfferHost } from "./screens/OffersScreen";
 import { PrintView } from "./screens/PrintView";
 import { ProfitScreen } from "./screens/ProfitScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
@@ -53,6 +54,7 @@ export function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
+  const [draft, setDraft] = useState<JobRecord | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [pendingNav, setPendingNav] = useState<Route | null>(null);
   const dirtyRef = useRef(false);
@@ -85,32 +87,45 @@ export function App() {
       setPendingNav(next);
       return;
     }
+    if (leavingJob && draft && route.name === "job" && draft.id === route.id) setDraft(null);
     commit(next);
   }
 
-  const current = route.name === "job" || route.name === "print" ? jobs.find((job) => job.id === route.id) : undefined;
+  const current = route.name === "job" || route.name === "print"
+    ? jobs.find((job) => job.id === route.id) ?? (draft && route.name === "job" && draft.id === route.id ? draft : undefined)
+    : undefined;
 
   async function useSize(size: RecommendSize, target: "offer" | "install") {
     if (!settings) return;
     if (target === "offer") {
-      const offer = createOffer(size);
-      await saveOffer(offer);
-      setOffers((list) => [offer, ...list]);
-      commit({ name: "offer", id: offer.id });
+      const created = createInstallJob(settings);
+      const job: JobRecord = {
+        ...created,
+        status: "quote",
+        notes: `BTU calculator recommended ${size}.`,
+        money: { ...emptyMoney(), size },
+      };
+      await saveJob(job);
+      setJobs((list) => [job, ...list]);
+      commit({ name: "job", id: job.id });
       return;
     }
     const created = createInstallJob(settings);
-    const job = { ...created, notes: `BTU calculator recommended ${size}.` };
-    await saveJob(job);
-    setJobs((list) => [job, ...list]);
+    const job = {
+      ...created,
+      status: "quote" as const,
+      notes: `BTU calculator recommended ${size}.`,
+      money: { ...emptyMoney(), size },
+    };
+    setDraft(job);
     commit({ name: "job", id: job.id });
   }
 
-  async function add(kind: "install" | "service") {
+  function add(kind: "install" | "service", status: "quote" | "scheduled") {
     if (!settings) return;
     const job = kind === "service" ? createServiceJob(settings) : createInstallJob(settings);
-    await saveJob(job);
-    setJobs((list) => [job, ...list]);
+    job.status = status;
+    setDraft(job);
     go({ name: "job", id: job.id });
   }
 
@@ -145,25 +160,19 @@ export function App() {
         </header>
       <nav className="tabbar four top no-print">
         <button type="button" data-testid="tab-btu" className={route.name === "main" && route.tab === "btu" ? "on" : ""} onClick={() => go({ name: "main", tab: "btu" })}>BTU</button>
-        <button type="button" data-testid="tab-offers" className={offerTab ? "on" : ""} onClick={() => go({ name: "main", tab: "offers" })}>Offer<small>Ofertë</small></button>
-        <button type="button" data-testid="tab-jobs" className={jobsTab ? "on" : ""} onClick={() => go({ name: "main", tab: "jobs" })}>Service &amp; install<small>Servis / montim</small></button>
-        <button type="button" data-testid="tab-profit" className={route.name === "main" && route.tab === "profit" ? "on" : ""} onClick={() => go({ name: "main", tab: "profit" })}>Profit &amp; loss<small>Fitim / humbje</small></button>
+        <button type="button" data-testid="tab-offers" className={offerTab ? "on" : ""} onClick={() => go({ name: "main", tab: "offers" })}>Ofertë<small>Offer</small></button>
+        <button type="button" data-testid="tab-jobs" className={jobsTab ? "on" : ""} onClick={() => go({ name: "main", tab: "jobs" })}>Servis & montim<small>Service & install</small></button>
+        <button type="button" data-testid="tab-profit" className={route.name === "main" && route.tab === "profit" ? "on" : ""} onClick={() => go({ name: "main", tab: "profit" })}>Fitim / humbje<small>Profit & loss</small></button>
       </nav>
       <main className="main">
         {!ready && !error ? <p>Opening LCP Clima…</p> : null}
         {error ? <p>{error}</p> : null}
         {ready && settings && route.name === "main" && route.tab === "btu" ? <BtuScreen onUse={(size, target) => void useSize(size, target)} /> : null}
         {ready && settings && route.name === "main" && route.tab === "offers" ? (
-          <OfferList offers={offers} onOpen={(id) => commit({ name: "offer", id })} onNew={() => {
-            const offer = createOffer();
-            void saveOffer(offer).then(() => {
-              setOffers((list) => [offer, ...list]);
-              commit({ name: "offer", id: offer.id });
-            });
-          }} />
+          <JobHome mode="offer" jobs={jobs} offers={offers} onOpen={(id) => commit({ name: "job", id })} onOpenOffer={(id) => commit({ name: "offer", id })} onNew={add} />
         ) : null}
         {ready && settings && route.name === "main" && route.tab === "jobs" ? (
-          <JobHome jobs={jobs} onOpen={(id) => commit({ name: "job", id })} onNew={(kind) => void add(kind)} />
+          <JobHome mode="work" jobs={jobs} offers={[]} onOpen={(id) => commit({ name: "job", id })} onOpenOffer={() => undefined} onNew={add} />
         ) : null}
         {ready && settings && route.name === "main" && route.tab === "profit" ? (
           <ProfitScreen jobs={jobs} onOpen={(id) => commit({ name: "job", id })} />
@@ -206,8 +215,13 @@ export function App() {
           <JobForm
             key={current.id}
             initial={current}
+            book={settings?.priceBook ?? []}
+            draft={draft?.id === current.id}
             onDirty={onDirty}
-            onSaved={(job) => setJobs((list) => list.map((item) => (item.id === job.id ? job : item)))}
+            onSaved={(job) => {
+              setJobs((list) => list.some((item) => item.id === job.id) ? list.map((item) => (item.id === job.id ? job : item)) : [job, ...list]);
+              setDraft(null);
+            }}
             onDelete={() => setPendingDelete(current.id)}
           />
         ) : null}
@@ -223,7 +237,7 @@ export function App() {
         <Dialog title="Unsaved changes (ndryshime të paruajtura)" onClose={() => setPendingNav(null)}>
           <p>Leave without saving? (Dil pa i ruajtur?)</p>
           <div className="actions">
-            <button type="button" className="btn danger" onClick={() => { const next = pendingNav; dirtyRef.current = false; setPendingNav(null); commit(next); }}>
+            <button type="button" className="btn danger" onClick={() => { const next = pendingNav; dirtyRef.current = false; if (draft && route.name === "job" && draft.id === route.id) setDraft(null); setPendingNav(null); commit(next); }}>
               Leave (dil)
             </button>
             <button type="button" className="btn" onClick={() => setPendingNav(null)}>Stay (rri)</button>
@@ -237,12 +251,22 @@ export function App() {
             <button
               type="button"
               className="btn danger"
+              data-testid="confirm-delete"
               onClick={() => {
                 const id = pendingDelete;
+                if (draft?.id === id && !jobs.some((job) => job.id === id)) {
+                  setDraft(null);
+                  setPendingDelete(null);
+                  dirtyRef.current = false;
+                  commit({ name: "main", tab: "jobs" });
+                  return;
+                }
                 void deleteJob(id).then(() => {
                   setJobs((list) => list.filter((job) => job.id !== id));
+                  setDraft(null);
                   setPendingDelete(null);
-                  go({ name: "main", tab: "jobs" });
+                  dirtyRef.current = false;
+                  commit({ name: "main", tab: "jobs" });
                 });
               }}
             >

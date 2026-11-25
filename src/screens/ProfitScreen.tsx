@@ -28,23 +28,24 @@ export function ProfitScreen({ jobs, onOpen }: { jobs: JobRecord[]; onOpen: (id:
     .sort((a, b) => (a.job.date || "").localeCompare(b.job.date || ""));
   const revenue = rows.reduce((sum, row) => sum + row.totals.sell, 0);
   const cost = rows.reduce((sum, row) => sum + row.totals.cost, 0);
-  const profit = revenue - cost;
-  const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+  const profit = rows.reduce((sum, row) => sum + row.totals.profit, 0);
+  const netRevenue = revenue / 1.2;
+  const margin = netRevenue > 0 ? (profit / netRevenue) * 100 : 0;
 
   return (
     <div className="stack" data-testid="profit-screen">
       <section className="card stack">
-        <h2>Profit &amp; loss <small className="hint">Fitim dhe humbje</small></h2>
+        <h2>Fitim / humbje <small className="hint">Profit &amp; loss. Read only.</small></h2>
         <label className="field">
-          <span>Month <small className="hint">Muaji</small></span>
+          <span>Muaji <small className="hint">Month</small></span>
           <select data-testid="profit-month" value={month} onChange={(event) => setMonth(event.target.value)}>
             {months.map((key) => <option key={key} value={key}>{monthLabel(key)}</option>)}
           </select>
         </label>
-        <div className="kv"><span>Revenue <small>Të ardhurat</small></span><b>{lek(revenue)}</b></div>
-        <div className="kv"><span>Cost <small>Kostoja</small></span><b>{lek(cost)}</b></div>
-        <div className="kv"><span>Profit <small>Fitimi</small></span><Money value={profit} /></div>
-        <div className="kv"><span>Margin <small>Marzhi</small></span><b>{margin.toFixed(1)}%</b></div>
+        <div className="kv"><span>Të ardhurat <small>Revenue</small></span><b>{lek(revenue)}</b></div>
+        <div className="kv"><span>Kostoja <small>Cost</small></span><b>{lek(cost)}</b></div>
+        <div className="kv"><span>Fitimi <small>Profit</small></span><Money value={profit} /></div>
+        <div className="kv"><span>Marzhi <small>Margin</small></span><b>{margin.toFixed(1)}%</b></div>
       </section>
       {rows.length === 0 ? <p>No saved jobs in this month. (Asnjë punë këtë muaj.)</p> : null}
       {rows.map(({ job, totals }) => (
@@ -53,8 +54,8 @@ export function ProfitScreen({ jobs, onOpen }: { jobs: JobRecord[]; onOpen: (id:
             <strong>{job.customerName || "No name"}</strong>
             <Money value={totals.profit} />
           </div>
-          <div className="meta">{formatDate(job.date) || "No date"} · {job.kind === "service" ? "Service" : "Installation"}</div>
-          <div className="meta">Sell {lek(totals.sell)} · Cost {lek(totals.cost)} · {totals.margin.toFixed(1)}%</div>
+          <div className="meta">{formatDate(job.date) || "Pa datë"} · {job.kind === "service" ? "Servis" : "Montim"}</div>
+          <div className="meta">Shitja {lek(totals.sell)} · Kostoja {lek(totals.cost)} · {totals.margin.toFixed(1)}%</div>
         </button>
       ))}
     </div>

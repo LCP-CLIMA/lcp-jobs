@@ -86,7 +86,27 @@ export type JobMoney = {
   extraHelper: string;
   extraFloor: string;
   extraOther: string;
+  vacuumCost: string;
+  /** Legacy single selling price. New jobs use unitSell plus each line's sell. */
   sellingPrice: string;
+  unitSell: string;
+  matPipesSell: string;
+  matCableSell: string;
+  matBracketSell: string;
+  matDrainSell: string;
+  matOtherSell: string;
+  extraTravelSell: string;
+  extraOtherSell: string;
+  targetMargin: string;
+  tiers: { name: string; sell: string }[];
+  /** One size for the whole job. It suggests labour and the package. It does not set the selling price. */
+  size: "" | "9k" | "12k" | "18k" | "24k";
+  /** Off until the installer chooses to count a wage. */
+  payWage: boolean;
+  /** Off until the installer counts the vacuum / nitrogen test. */
+  vacuumOn: boolean;
+  /** On: every cost on this job has a VAT invoice, so that VAT is deducted. */
+  purchasesVat: boolean;
 };
 
 export type JobBase = {
@@ -176,6 +196,15 @@ export type ChargeReading = {
   compressorAmps: string;
   ratedAmps: string;
   lineSetM: string;
+};
+
+export type BookItem = {
+  id: string;
+  name: string;
+  group: "unit" | "pipes" | "cable" | "bracket" | "drain" | "other" | "travel";
+  buy: string;
+  sell: string;
+  size?: "" | "9k" | "12k" | "18k" | "24k";
 };
 
 export type WarrantyPackage = {
@@ -291,6 +320,7 @@ export type Settings = {
   visitPriceV2?: boolean;
   /** Default repair-option prices copied onto new service jobs. Unknown prices stay 0. */
   repairCatalog: RepairOption[];
+  priceBook: BookItem[];
 };
 
 export type PhotoRecord = {

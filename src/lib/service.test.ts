@@ -103,12 +103,13 @@ describe("service call", () => {
       "Ofertë",
       "E planifikuar",
       "Në proces",
-      "Përfunduar dhe paguar",
+      "Përfunduar",
+      "Paguar",
     ]);
-    expect(normalizeJob({ kind: "service", id: "a", status: "done" }).status).toBe("paid");
+    expect(normalizeJob({ kind: "service", id: "a", status: "done" }).status).toBe("done");
     expect(normalizeJob({ kind: "service", id: "b", status: "paid" }).status).toBe("paid");
     expect(normalizeJob({ kind: "service", id: "c", status: "scheduled" }).status).toBe("scheduled");
-    expect(normalizeJob({ kind: "install", id: "d", status: "done" }).status).toBe("paid");
+    expect(normalizeJob({ kind: "install", id: "d", status: "done" }).status).toBe("done");
     expect(normalizeJob({ kind: "install", id: "e", status: "paid" }).status).toBe("paid");
     expect(normalizeJob({ kind: "install", id: "f", status: "scheduled" }).status).toBe("scheduled");
     const saved = normalizeJob({ kind: "service", id: "old", status: "quote", callOut: "4000" });
