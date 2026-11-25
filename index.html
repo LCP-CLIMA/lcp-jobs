@@ -12,9 +12,35 @@
     <link rel="icon" href="%BASE_URL%favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
     <title>LCP Clima</title>
+    <script>
+      (function () {
+        var VERSION = "v6-2026-11-25";
+        try { if (localStorage.getItem("lcp-build") === VERSION) return; } catch (e) {}
+        function finish() {
+          try { localStorage.setItem("lcp-build", VERSION); } catch (e) {}
+          if (!sessionStorage.getItem("lcp-purged")) {
+            sessionStorage.setItem("lcp-purged", "1");
+            location.reload();
+          }
+        }
+        var jobs = [];
+        if (navigator.serviceWorker) {
+          jobs.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+            return Promise.all(regs.map(function (reg) { return reg.unregister(); }));
+          }));
+        }
+        if (window.caches) {
+          jobs.push(caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (key) { return caches.delete(key); }));
+          }));
+        }
+        Promise.all(jobs).then(finish, finish);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <p id="lcp-version" style="margin:0;padding:6px 12px 10px;text-align:center;font:12px sans-serif;color:#4a5f75">v6 · 25 Nov</p>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -144,6 +144,15 @@ export function JobForm({
     setMoney({ unitSell: String(Math.round(suggested - other)) });
   }
 
+  async function accept() {
+    const next = { ...job, money, status: "scheduled" as const, updatedAt: new Date().toISOString() };
+    await saveJob(next);
+    setJob(next);
+    setSavedMark(JSON.stringify(next));
+    onSaved(next);
+    onDirty(false);
+  }
+
   async function save() {
     const next = { ...job, money, updatedAt: new Date().toISOString() };
     await saveJob(next);
@@ -295,7 +304,12 @@ export function JobForm({
             </button>
           ))}
         </div>
-        {job.status === "quote" ? <p className="hint">Kjo është oferta. Kur e pranon, e njëjta punë kalon te Servis & montim. Same record, no retyping.</p> : null}
+        {job.status === "quote" ? (
+          <>
+            <p className="hint">Kjo është oferta. Pranoje dhe e njëjta punë kalon te Servis & montim, pa i shkruar fushat përsëri.</p>
+            <button type="button" className="btn gold" data-testid="accept-job" onClick={() => void accept()}>Pranoje · Accept</button>
+          </>
+        ) : null}
       </section>
 
       <div className="actions">

@@ -26,8 +26,11 @@ export default defineConfig({
         ],
       },
       workbox: {
-        cacheId: "lcp-jobs-v5",
+        cacheId: "lcp-jobs-v6",
+        skipWaiting: true,
+        clientsClaim: true,
         cleanupOutdatedCaches: true,
+        importScripts: ["sw-extra.js"],
         globPatterns: ["**/*.{js,mjs,css,html,svg,png,jpg,woff,woff2,ico,wasm}"],
         navigateFallback: "/lcp-jobs/index.html",
         runtimeCaching: [

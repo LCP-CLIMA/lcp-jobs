@@ -23,6 +23,7 @@ export function ProfitScreen({ jobs, onOpen }: { jobs: JobRecord[]; onOpen: (id:
   }, [jobs]);
   const [month, setMonth] = useState(() => monthKey(new Date().toISOString().slice(0, 10)));
   const rows = jobs
+    .filter((job) => !/^example\b/i.test(job.customerName) && !job.id.startsWith("example-"))
     .filter((job) => monthKey(job.date) === month)
     .map((job) => ({ job, totals: moneyTotals(job.money) }))
     .sort((a, b) => (a.job.date || "").localeCompare(b.job.date || ""));

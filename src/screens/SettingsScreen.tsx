@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { buildBackup, readBackup, shareOrDownload } from "../lib/backup";
 import { askPersist, getAllPhotos, getOffers, replaceAll, saveSettings, storageEstimate } from "../lib/db";
+import { APP_VERSION } from "../lib/version";
 import type { BookItem, JobRecord, Settings } from "../lib/types";
 import { Field, Section, Toggle } from "../ui";
 
@@ -36,6 +37,7 @@ export function SettingsScreen({
 
   return (
     <div className="stack">
+      <p data-testid="app-version">{APP_VERSION}</p>
       <Section title="Lista e çmimeve" caption="Price book. Buy and sell for each saved item. On a job, tap Shto and then edit the amount.">
         <div className="stack">
           {(settings.priceBook ?? []).map((item) => (

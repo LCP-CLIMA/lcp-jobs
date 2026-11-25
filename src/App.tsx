@@ -7,6 +7,7 @@ import { emptyMoney } from "./lib/simple";
 import type { RecommendSize } from "./lib/btu";
 import type { JobRecord, Offer, Settings } from "./lib/types";
 import { Dialog } from "./ui";
+import { APP_VERSION } from "./lib/version";
 import { BtuScreen } from "./screens/BtuScreen";
 import { JobForm } from "./screens/JobForm";
 import { JobHome } from "./screens/JobHome";
@@ -164,6 +165,7 @@ export function App() {
         <button type="button" data-testid="tab-jobs" className={jobsTab ? "on" : ""} onClick={() => go({ name: "main", tab: "jobs" })}>Servis & montim<small>Service & install</small></button>
         <button type="button" data-testid="tab-profit" className={route.name === "main" && route.tab === "profit" ? "on" : ""} onClick={() => go({ name: "main", tab: "profit" })}>Fitim / humbje<small>Profit & loss</small></button>
       </nav>
+      <p className="build-tag no-print" data-testid="app-version">{APP_VERSION}</p>
       <main className="main">
         {!ready && !error ? <p>Opening LCP Clima…</p> : null}
         {error ? <p>{error}</p> : null}
