@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import logo from "./assets/logo.jpg";
 import { COMPANY } from "./lib/company";
 import { deleteJob, deleteOffer, getOffers, loadApp, readNow, saveJob, saveOffer } from "./lib/db";
@@ -11,11 +11,12 @@ import { APP_VERSION } from "./lib/version";
 import { BtuScreen } from "./screens/BtuScreen";
 import { JobForm } from "./screens/JobForm";
 import { JobHome } from "./screens/JobHome";
-import { OfferHost } from "./screens/OffersScreen";
 import { CustomerPage } from "./screens/CustomerPage";
 import { jobCustomerView } from "./lib/customerOffer";
 import { ProfitScreen } from "./screens/ProfitScreen";
-import { SettingsScreen } from "./screens/SettingsScreen";
+
+const SettingsScreen = lazy(() => import("./screens/SettingsScreen").then((mod) => ({ default: mod.SettingsScreen })));
+const OfferHost = lazy(() => import("./screens/OffersScreen").then((mod) => ({ default: mod.OfferHost })));
 
 type MainTab = "btu" | "offers" | "jobs" | "profit";
 type Route =
@@ -149,7 +150,7 @@ export function App() {
           </>
         ) : (
           <>
-            <button type="button" className="icon-btn" onClick={() => go({ name: "main", tab: route.name === "offer" || route.name === "print" ? "offers" : "jobs" })}>Mbrapa</button>
+            <button type="button" className="icon-btn" onClick={() => go({ name: "main", tab: route.name === "offer" || route.name === "print" || current?.status === "quote" ? "offers" : "jobs" })}>Mbrapa</button>
             <img className="brand-logo small" src={logo} alt="" />
             <h1>{route.name === "settings" ? "Cilësimet" : route.name === "print" ? "Oferta" : current?.customerName || "Puna"}</h1>
             <span className="spacer" />
@@ -165,6 +166,7 @@ export function App() {
       </nav>}
       {route.name === "print" ? null : <p className="build-tag no-print" data-testid="app-version">{APP_VERSION}</p>}
       <main className="main">
+        <Suspense fallback={<p>Po hapet…</p>}>
         {!ready && !error ? <p>Po hapet LCP Clima…</p> : null}
         {error ? <p>Nuk u hap ruajtja në këtë telefon.</p> : null}
         {ready && settings && route.name === "main" && route.tab === "btu" ? <BtuScreen onUse={(size, target) => void useSize(size, target)} /> : null}
@@ -242,6 +244,7 @@ export function App() {
             companyPhone={settings.companyPhone}
           />
         ) : null}
+        </Suspense>
       </main>
       {pendingNav ? (
         <Dialog title="Ndryshime të paruajtura" onClose={() => setPendingNav(null)}>

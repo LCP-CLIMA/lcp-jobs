@@ -2,7 +2,7 @@ self.addEventListener("activate", function (event) {
   event.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(keys.filter(function (key) {
-        return key.indexOf("lcp-jobs-v7") === -1 && key.indexOf("lcp-ocr") === -1;
+        return key.indexOf("lcp-jobs-v8") === -1 && key.indexOf("lcp-ocr") === -1;
       }).map(function (key) { return caches.delete(key); }));
     }).then(function () {
       return self.clients.matchAll({ type: "window", includeUncontrolled: true });

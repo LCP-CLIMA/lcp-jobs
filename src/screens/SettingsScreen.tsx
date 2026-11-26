@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { buildBackup, readBackup, shareOrDownload } from "../lib/backup";
 import { askPersist, getAllPhotos, getOffers, replaceAll, saveSettings, storageEstimate } from "../lib/db";
 import { APP_VERSION } from "../lib/version";
@@ -28,11 +28,22 @@ export function SettingsScreen({
   const [pending, setPending] = useState<Awaited<ReturnType<typeof readBackup>> | null>(null);
   const [readyFile, setReadyFile] = useState<{ blob: Blob; name: string } | null>(null);
   const [storage, setStorage] = useState("");
+  const queued = useRef<Settings | null>(null);
+  const timer = useRef(0);
+  useEffect(() => () => {
+    window.clearTimeout(timer.current);
+    if (queued.current) void saveSettings(queued.current);
+  }, []);
 
   function update(partial: Partial<Settings>) {
     const next = { ...settings, ...partial };
     onChange(next);
-    void saveSettings(next);
+    queued.current = next;
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      queued.current = null;
+      void saveSettings(next);
+    }, 400);
   }
 
   return (
@@ -155,6 +166,7 @@ export function SettingsScreen({
           <Num label='3/8" Lek/m' value={settings.pipe["3/8"]} onChange={(value) => update({ pipe: { ...settings.pipe, "3/8": value } })} />
           <Num label='1/2" Lek/m' value={settings.pipe["1/2"]} onChange={(value) => update({ pipe: { ...settings.pipe, "1/2": value } })} />
           <Num label='5/8" Lek/m' value={settings.pipe["5/8"]} onChange={(value) => update({ pipe: { ...settings.pipe, "5/8": value } })} />
+          <Num label='3/4" Lek/m' value={settings.pipe["3/4"]} onChange={(value) => update({ pipe: { ...settings.pipe, "3/4": value } })} />
           <Num label="Kabllo 3x2.5, Lek/m" value={settings.cable3} onChange={(cable3) => update({ cable3 })} />
           <Num label="Kabllo 5x1.5, Lek/m" value={settings.cable5} onChange={(cable5) => update({ cable5 })} />
           <Num label="Zorrë drenazhi, Lek/m" value={settings.drain} onChange={(drain) => update({ drain })} />

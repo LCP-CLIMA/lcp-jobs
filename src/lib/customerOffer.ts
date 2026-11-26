@@ -1,9 +1,10 @@
 import { formatDate, lek, num } from "./format";
 import { membershipBreakdown } from "./offer";
 import { emptyMoney, moneyTotals } from "./simple";
+import { detailLines, summarize } from "./split";
 import type { JobMoney, JobRecord, Settings } from "./types";
 
-export type SheetLine = { label: string; amount: number; detail?: string };
+export type SheetLine = { label: string; amount: number; detail?: string; heading?: boolean };
 
 const BTU: Record<Exclude<JobMoney["size"], "">, string> = {
   "9k": "9000",
@@ -18,7 +19,8 @@ export function jobDescription(job: JobRecord): string {
   const unit = btu ? `Kondicioner Inverter ${btu} BTU` : "";
   const brand = job.kind === "install" ? [job.brand, job.model].filter(Boolean).join(" ") : "";
   const service = job.kind === "service" ? job.problem : "";
-  return [unit, brand, service].filter(Boolean).join(", ") || (job.kind === "service" ? "Servis" : "Montim");
+  const summary = summarize(money.systems);
+  return [unit, brand, service, summary].filter(Boolean).join(", ") || (job.kind === "service" ? "Servis" : "Montim");
 }
 
 export type CustomerView = {
@@ -50,7 +52,8 @@ export function jobCustomerView(job: JobRecord, settings: Settings): CustomerVie
   const lines: SheetLine[] = named
     .filter(([, value]) => num(value) > 0)
     .map(([label, value]) => ({ label, amount: num(value) }));
-  if (lines.length === 0 && totals.sell > 0) lines.push({ label: description, amount: totals.sell });
+  lines.push(...detailLines(money.systems));
+  if (!lines.some((line) => !line.heading && line.amount > 0) && totals.sell > 0) lines.unshift({ label: description, amount: totals.sell });
 
   const years = Math.max(0, Math.floor(num(money.warrantyYears || "0")));
   const warrantyPrice = num(settings.extraWarrantyYear || "25000");
@@ -75,7 +78,7 @@ export function jobCustomerView(job: JobRecord, settings: Settings): CustomerVie
     });
   }
 
-  const total = totals.sell + years * warrantyPrice + membership.charge;
+  const total = totals.sell + (totals.hasSell ? 0 : totals.detail) + years * warrantyPrice + membership.charge;
   const net = total / 1.2;
   return {
     description,
@@ -103,6 +106,7 @@ export function customerShareText(input: {
   showVat: boolean;
 }): string {
   const rows = input.lines.map((line) => {
+    if (line.heading) return line.label;
     const detail = line.detail ? ` — ${line.detail}` : "";
     return `${line.label}: ${lek(line.amount)}${detail}`;
   });

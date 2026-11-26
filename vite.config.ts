@@ -26,7 +26,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        cacheId: "lcp-jobs-v7",
+        cacheId: "lcp-jobs-v8",
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,

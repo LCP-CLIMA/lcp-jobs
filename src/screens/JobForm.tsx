@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { saveJob } from "../lib/db";
 import { lek, num } from "../lib/format";
 import { emptyMoney, lineMargin, moneyTotals, SIZE_LABOR, SIZE_PACKAGE, suggestSell } from "../lib/simple";
+import { resizeSingle, systemsOf } from "../lib/split";
 import { SERVICE_STATUSES } from "../lib/status";
 import type { BookItem, JobMoney, JobRecord, JobStatus, Settings } from "../lib/types";
+import { SplitPanel } from "./SplitPanel";
 import { DateField, Field, Money } from "../ui";
 
 function MoneyPair({
@@ -88,8 +90,12 @@ export function JobForm({
 }) {
   const [job, setJob] = useState(initial);
   const [savedMark, setSavedMark] = useState("");
-  const money = { ...emptyMoney(), ...job.money, tiers: job.money?.tiers?.length ? job.money.tiers : emptyMoney().tiers };
-  const totals = moneyTotals(money);
+  const money = useMemo(
+    () => ({ ...emptyMoney(), ...job.money, tiers: job.money?.tiers?.length ? job.money.tiers : emptyMoney().tiers }),
+    [job.money],
+  );
+  const totals = useMemo(() => moneyTotals(money), [money]);
+  const systems = money.systems?.length ? money.systems : systemsOf(money, settings, job.id);
   const dirty = JSON.stringify(job) !== JSON.stringify(initial) && savedMark !== JSON.stringify(job);
 
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
@@ -132,7 +138,8 @@ export function JobForm({
 
   function applySize(size: JobMoney["size"]) {
     const wage = size ? String(SIZE_LABOR[size]) : money.extraHelper;
-    setMoney({ size, extraHelper: wage });
+    const nextSystems = systems.map((system, index) => index === 0 && system.kind === "single" ? resizeSingle(system, size || "12k", settings) : system);
+    setMoney({ size, extraHelper: wage, systems: nextSystems });
   }
 
   function applyTarget() {
@@ -195,6 +202,18 @@ export function JobForm({
         </Field>
       </section>
 
+      {job.kind === "install" ? (
+        <SplitPanel
+          systems={systems}
+          settings={settings}
+          onChange={(next) => {
+            const single = next.length === 1 && next[0].kind === "single" ? next[0].outdoors[0]?.indoors[0]?.size : "";
+            const size = single === "9k" || single === "12k" || single === "18k" || single === "24k" ? single : "";
+            setMoney({ systems: next, size });
+          }}
+        />
+      ) : null}
+
       <section className="card stack">
         <h2>Njësia</h2>
         <Field label="Marka">
@@ -203,15 +222,17 @@ export function JobForm({
         <Field label="Modeli">
           <input value={job.kind === "install" ? job.model : ""} onChange={(event) => setJob({ ...job, model: event.target.value } as JobRecord)} />
         </Field>
-        <Field label="Madhësia BTU">
-          <select data-testid="job-size" value={money.size} onChange={(event) => applySize(event.target.value as JobMoney["size"])}>
-            <option value="">—</option>
-            <option value="9k">9k</option>
-            <option value="12k">12k</option>
-            <option value="18k">18k</option>
-            <option value="24k">24k</option>
-          </select>
-        </Field>
+        {systems[0]?.kind === "multi" ? null : (
+          <Field label="Madhësia BTU">
+            <select data-testid="job-size" value={money.size} onChange={(event) => applySize(event.target.value as JobMoney["size"])}>
+              <option value="">—</option>
+              <option value="9k">9k</option>
+              <option value="12k">12k</option>
+              <option value="18k">18k</option>
+              <option value="24k">24k</option>
+            </select>
+          </Field>
+        )}
         {packageHint ? <p className="hint">Paketa e kësaj madhësie {lek(packageHint)}. Nuk vendoset vetë si çmim shitjeje.</p> : null}
         <MoneyPair sq="Njësia" buy={money.unitBuy} sell={money.unitSell} vat={money.purchasesVat} buyTest="unit-buy" sellTest="selling-price" onBuy={(unitBuy) => setMoney({ unitBuy })} onSell={(unitSell) => setMoney({ unitSell })} />
         <label className="field">
@@ -223,6 +244,7 @@ export function JobForm({
 
       <section className="card stack">
         <h2>Materialet</h2>
+        <p className="hint">Vetëm ato që nuk janë te Detaje.</p>
         <BookPicker book={book} onAdd={addBookItem} />
         <MoneyPair sq="Tuba + izolim" buy={money.matPipes} sell={money.matPipesSell} vat={money.purchasesVat} buyTest="materials" onBuy={(matPipes) => setMoney({ matPipes })} onSell={(matPipesSell) => setMoney({ matPipesSell })} />
         <MoneyPair sq="Kabllo" buy={money.matCable} sell={money.matCableSell} vat={money.purchasesVat} onBuy={(matCable) => setMoney({ matCable })} onSell={(matCableSell) => setMoney({ matCableSell })} />
@@ -323,6 +345,7 @@ export function JobForm({
       </div>
 
       <aside className="sticky-profit no-print" data-testid="job-totals">
+        {totals.detail > 0 ? <div className="kv"><span>Detajet</span><b>{lek(totals.detail)}</b></div> : null}
         {totals.hasSell ? (
           <>
             <div className="kv"><span>Kostoja</span><b data-testid="total-cost">{lek(totals.cost)}</b></div>

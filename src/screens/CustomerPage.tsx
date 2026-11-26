@@ -62,8 +62,10 @@ export function CustomerPage({
         <p><b>Adresa:</b> {address || "—"}</p>
         <p><b>Data:</b> {date || "—"}</p>
         <p><b>Përshkrimi:</b> {description || "—"}</p>
-        {lines.map((line) => (
-          <div key={line.label} className="kv">
+        {lines.map((line, index) => line.heading ? (
+          <h3 key={`${line.label}-${index}`}>{line.label}</h3>
+        ) : (
+          <div key={`${line.label}-${index}`} className="kv">
             <span>{line.label}{line.detail ? <small className="hint"> {line.detail}</small> : null}</span>
             <b>{lek(line.amount)}</b>
           </div>

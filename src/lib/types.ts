@@ -1,6 +1,6 @@
 export type Size = "12k" | "18k" | "24k";
 export type OfferSize = "9k" | "12k" | "18k" | "24k" | "";
-export type Pipe = "1/4" | "3/8" | "1/2" | "5/8";
+export type Pipe = "1/4" | "3/8" | "1/2" | "5/8" | "3/4";
 export type Currency = "EUR" | "Lek";
 export type JobStatus = "quote" | "scheduled" | "progress" | "done" | "paid";
 export type JobKind = "install" | "service";
@@ -111,6 +111,44 @@ export type JobMoney = {
   warrantyYears: string;
   /** Membership years chosen on the offer. Year 1 is included. */
   membershipYears: string;
+  /** Missing on older quotes. Those open as one single split. */
+  systems?: SplitSystem[];
+};
+
+export type LinePipe = Pipe;
+
+export type IndoorUnit = {
+  id: string;
+  size: string;
+  liquid: LinePipe;
+  vapor: LinePipe;
+  /** Shared run length. Liquid and vapor follow it until edited. */
+  runM: string;
+  liquidM: string;
+  vaporM: string;
+  cable3M: string;
+  cable5M: string;
+  drainM: string;
+  liquidPrice: string;
+  vaporPrice: string;
+  cable3Price: string;
+  cable5Price: string;
+  drainPrice: string;
+};
+
+export type OutdoorUnit = {
+  id: string;
+  size: string;
+  mount: "ground" | "wall";
+  mountQty: string;
+  mountPrice: string;
+  indoors: IndoorUnit[];
+};
+
+export type SplitSystem = {
+  id: string;
+  kind: "single" | "multi";
+  outdoors: OutdoorUnit[];
 };
 
 export type JobBase = {

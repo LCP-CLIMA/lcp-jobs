@@ -2,7 +2,7 @@ import { num } from "./format";
 import type { BreakEvenRow, Calc, CalcInput, Pipe, PriceBook, Row, Size } from "./types";
 
 export const SIZES: Size[] = ["12k", "18k", "24k"];
-export const PIPES: Pipe[] = ["1/4", "3/8", "1/2", "5/8"];
+export const PIPES: Pipe[] = ["1/4", "3/8", "1/2", "5/8", "3/4"];
 export const PAIR: Record<Size, [Pipe, Pipe]> = {
   "12k": ["1/4", "3/8"],
   "18k": ["1/4", "1/2"],

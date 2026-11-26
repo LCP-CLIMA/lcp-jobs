@@ -1,4 +1,5 @@
 import { num } from "./format";
+import { systemRollup } from "./split";
 import type { InstallJob, JobMoney, JobRecord, Row, ServiceJob } from "./types";
 
 export function emptyMoney(): JobMoney {
@@ -66,6 +67,8 @@ export type MoneyTotals = {
   beforeVat: number;
   profit: number;
   margin: number;
+  /** Materials from Detaje, included in cost and, once a selling price exists, in the sale. */
+  detail: number;
 };
 
 /**
@@ -74,14 +77,15 @@ export type MoneyTotals = {
  */
 export function moneyTotals(money: JobMoney | undefined): MoneyTotals {
   const m = { ...emptyMoney(), ...money };
+  const detail = systemRollup(m.systems).sell;
   const materials = num(m.matPipes) + num(m.matInsulation) + num(m.matCable) + num(m.matBracket) + num(m.matDrain) + num(m.matGas) + num(m.matOther);
   const extras = num(m.extraTravel) + (m.payWage ? num(m.extraHelper) : 0) + num(m.extraFloor) + num(m.extraOther) + (m.vacuumOn ? num(m.vacuumCost) : 0);
-  const cost = num(m.unitBuy) + materials + extras;
+  const cost = num(m.unitBuy) + materials + extras + detail;
   const lineSell = num(m.unitSell) + num(m.matPipesSell) + num(m.matCableSell) + num(m.matBracketSell) + num(m.matDrainSell) + num(m.matOtherSell) + num(m.extraTravelSell) + num(m.extraOtherSell);
   const sellFields = [m.unitSell, m.matPipesSell, m.matCableSell, m.matBracketSell, m.matDrainSell, m.matOtherSell, m.extraTravelSell, m.extraOtherSell];
   const typedSell = sellFields.some((value) => (value ?? "").trim() !== "");
-  const sell = typedSell ? lineSell : num(m.sellingPrice);
   const hasSell = typedSell || (m.sellingPrice ?? "").trim() !== "";
+  const sell = (typedSell ? lineSell : num(m.sellingPrice)) + (hasSell ? detail : 0);
   const outputVat = sell / 6;
   const inputVat = m.purchasesVat !== false ? cost / 6 : 0;
   const vatToPay = outputVat - inputVat;
@@ -89,7 +93,7 @@ export function moneyTotals(money: JobMoney | undefined): MoneyTotals {
   const profit = hasSell ? sell - vatToPay - cost : 0;
   const netSell = sell / 1.2;
   const margin = hasSell && netSell > 0 ? (profit / netSell) * 100 : 0;
-  return { materials, extras, cost, sell, hasSell, outputVat, inputVat, vatToPay, beforeVat, profit, margin };
+  return { materials, extras, cost, sell, hasSell, outputVat, inputVat, vatToPay, beforeVat, profit, margin, detail };
 }
 
 /** Suggested VAT-inclusive selling price for a target margin on the price without VAT. */

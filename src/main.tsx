@@ -1,5 +1,4 @@
 import "@fontsource/fraunces/latin-600.css";
-import "@fontsource/fraunces/latin-600-italic.css";
 import "@fontsource/outfit/latin-400.css";
 import "@fontsource/outfit/latin-600.css";
 import "@fontsource/outfit/latin-700.css";
@@ -9,12 +8,7 @@ import { registerSW } from "virtual:pwa-register";
 import { App } from "./App";
 import "./index.css";
 
-registerSW({
-  immediate: true,
-  onRegisteredSW(_url, registration) {
-    void registration?.update();
-  },
-});
+registerSW({ immediate: true });
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

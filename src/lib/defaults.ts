@@ -2,13 +2,14 @@ import { PAIR, btuFor, pipeName } from "./calc";
 import { todayISO } from "./format";
 import { inverterLabel } from "./offer";
 import { emptyMoney, withMoney } from "./simple";
+import { freshSingle } from "./split";
 import { normalizeServiceStatus } from "./status";
 import type { BookItem, InstallJob, JobRecord, Offer, OfferSize, PriceBook, RepairOption, Row, ServiceJob, Settings, Size, WarrantyPackage } from "./types";
 
 export const FACTORY_BOOK: PriceBook = {
   labor: { "12k": "10000", "18k": "12000", "24k": "13000" },
   package: { "12k": "20500", "18k": "22500", "24k": "23500" },
-  pipe: { "1/4": "255", "3/8": "355", "1/2": "510", "5/8": "820" },
+  pipe: { "1/4": "255", "3/8": "355", "1/2": "510", "5/8": "820", "3/4": "" },
 };
 
 export function defaultSettings(): Settings {
@@ -298,7 +299,7 @@ export function createInstallJob(settings: Settings, id?: string): InstallJob {
     refGpm: settings.refGpm,
     refExtraM: "0",
     book,
-    money: emptyMoney(),
+    money: { ...emptyMoney(), size: "12k", systems: [freshSingle(settings)] },
   };
 }
 
