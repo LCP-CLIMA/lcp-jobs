@@ -353,6 +353,10 @@ export type Settings = {
   liftHour: string;
   /** Lek per hole in stone or concrete. Default 13,000. */
   hardWallHole: string;
+  /** Lek for one wall-bracket set. Editable in Settings. */
+  mountWall: string;
+  /** Lek for one ground base. Editable in Settings. */
+  mountGround: string;
   /**
    * Lek per floor above ground when there is no elevator.
    * 1,000 is an editable placeholder until the owner confirms it.

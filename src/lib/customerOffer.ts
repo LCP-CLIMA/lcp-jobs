@@ -30,6 +30,8 @@ export type CustomerView = {
   net: number;
   vat: number;
   showVat: boolean;
+  /** False until the unit and labour selling price is typed. Materials are not a substitute for it. */
+  hasUnitPrice: boolean;
   tiers: { name: string; sell: string }[];
   date: string;
 };
@@ -78,7 +80,7 @@ export function jobCustomerView(job: JobRecord, settings: Settings): CustomerVie
     });
   }
 
-  const total = totals.sell + (totals.hasSell ? 0 : totals.detail) + years * warrantyPrice + membership.charge;
+  const total = totals.hasSell ? totals.sell + years * warrantyPrice + membership.charge : 0;
   const net = total / 1.2;
   return {
     description,
@@ -87,6 +89,7 @@ export function jobCustomerView(job: JobRecord, settings: Settings): CustomerVie
     net,
     vat: total - net,
     showVat: job.showVatOnQuote === true,
+    hasUnitPrice: totals.hasSell,
     tiers: money.tiers.filter((tier) => tier.name.trim() || num(tier.sell) > 0),
     date: formatDate(job.date),
   };

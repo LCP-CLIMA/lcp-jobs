@@ -16,6 +16,7 @@ export function CustomerPage({
   net,
   vat,
   showVat,
+  hasUnitPrice,
   companyPhone,
   tiers,
 }: {
@@ -29,6 +30,7 @@ export function CustomerPage({
   net: number;
   vat: number;
   showVat: boolean;
+  hasUnitPrice: boolean;
   companyPhone: string;
   tiers: { name: string; sell: string }[];
 }) {
@@ -82,9 +84,9 @@ export function CustomerPage({
             <div className="kv"><span>TVSH 20%</span><b>{lek(vat)}</b></div>
           </>
         ) : null}
-        <div className="kv total-line" data-testid="offer-total"><span>Çmimi me TVSH</span><b>{lek(total)}</b></div>
+        {hasUnitPrice ? <div className="kv total-line" data-testid="offer-total"><span>Çmimi me TVSH</span><b>{lek(total)}</b></div> : null}
       </article>
-      <ShareBar text={text} phone={phone} />
+      {hasUnitPrice ? <ShareBar text={text} phone={phone} /> : <p className="warn" data-testid="need-price">Shkruaj çmimin e shitjes</p>}
     </div>
   );
 }

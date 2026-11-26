@@ -132,8 +132,9 @@ export function App() {
     go({ name: "job", id: job.id });
   }
 
-  const jobsTab = route.name === "job" || (route.name === "main" && route.tab === "jobs");
-  const offerTab = route.name === "offer" || (route.name === "main" && route.tab === "offers");
+  const onQuote = route.name === "offer" || ((route.name === "job" || route.name === "print") && current?.status === "quote");
+  const offerTab = onQuote || (route.name === "main" && route.tab === "offers");
+  const jobsTab = !onQuote && (route.name === "job" || route.name === "print" || (route.name === "main" && route.tab === "jobs"));
 
   return (
     <div className="app">

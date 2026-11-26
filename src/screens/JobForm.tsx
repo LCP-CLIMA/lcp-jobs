@@ -90,6 +90,7 @@ export function JobForm({
 }) {
   const [job, setJob] = useState(initial);
   const [savedMark, setSavedMark] = useState("");
+  const [priceWarning, setPriceWarning] = useState(false);
   const money = useMemo(
     () => ({ ...emptyMoney(), ...job.money, tiers: job.money?.tiers?.length ? job.money.tiers : emptyMoney().tiers }),
     [job.money],
@@ -173,6 +174,11 @@ export function JobForm({
   }
 
   async function printOffer() {
+    if (!totals.hasSell) {
+      setPriceWarning(true);
+      return;
+    }
+    setPriceWarning(false);
     const next = await persist();
     onPrinted(next);
   }
@@ -234,7 +240,8 @@ export function JobForm({
           </Field>
         )}
         {packageHint ? <p className="hint">Paketa e kësaj madhësie {lek(packageHint)}. Nuk vendoset vetë si çmim shitjeje.</p> : null}
-        <MoneyPair sq="Njësia" buy={money.unitBuy} sell={money.unitSell} vat={money.purchasesVat} buyTest="unit-buy" sellTest="selling-price" onBuy={(unitBuy) => setMoney({ unitBuy })} onSell={(unitSell) => setMoney({ unitSell })} />
+        <MoneyPair sq="Njësia" buy={money.unitBuy} sell={money.unitSell} vat={money.purchasesVat} buyTest="unit-buy" sellTest="selling-price" onBuy={(unitBuy) => setMoney({ unitBuy })} onSell={(unitSell) => { setPriceWarning(false); setMoney({ unitSell }); }} />
+        <p className="hint">Ky është çmimi i njësisë dhe i punës. Materialet e Detajeve i shtohen, nuk janë brenda këtij çmimi.</p>
         <label className="field">
           <span>Marzh i synuar %</span>
           <input data-testid="target-margin" inputMode="decimal" value={money.targetMargin} onChange={(event) => setMoney({ targetMargin: event.target.value })} />
@@ -340,6 +347,7 @@ export function JobForm({
 
       <div className="actions">
         <button type="button" className="btn" data-testid="print-offer" onClick={() => void printOffer()}>Printo / Shpërndaj ofertën</button>
+        {priceWarning ? <p className="warn" data-testid="need-price">Shkruaj çmimin e shitjes</p> : null}
         <button type="button" className="btn gold" data-testid="save-job" onClick={() => void save()}>{draft || dirty ? "Ruaj" : "E ruajtur"}</button>
         <button type="button" className="btn danger" onClick={onDelete}>Fshi</button>
       </div>

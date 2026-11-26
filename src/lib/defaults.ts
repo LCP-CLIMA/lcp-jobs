@@ -52,6 +52,8 @@ export function defaultSettings(): Settings {
     membershipYear: "6000",
     liftHour: "10000",
     hardWallHole: "13000",
+    mountWall: "1500",
+    mountGround: "4000",
     floorSurcharge: "1000",
     visitPriceV2: true,
     repairCatalog: defaultRepairCatalog(),

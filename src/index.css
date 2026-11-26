@@ -117,7 +117,8 @@ img { max-width: 100%; }
 .version-label { text-align: left; padding: 0; font-weight: 700; color: var(--navy); }
 .stepper-line { display: flex; align-items: center; gap: 8px; }
 .stepper-line button { min-width: 48px; min-height: 48px; font-size: 1.5rem; border-radius: 12px; border: 1.5px solid var(--line); background: white; }
-.stepper-line b { min-width: 72px; text-align: center; font-size: 1.15rem; }
+.stepper-line b, .stepper-line .step-num { min-width: 84px; min-height: 48px; text-align: center; font-size: 16px; font-weight: 700; }
+.step-num { width: 84px; border-radius: 12px; border: 1.5px solid var(--line); background: white; padding: 8px; }
 .size-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .size-chips .chip { min-width: 44px; min-height: 44px; padding: 8px 10px; }
 .split-block { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; border-top: 1px solid var(--line); }

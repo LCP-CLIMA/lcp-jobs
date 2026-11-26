@@ -38,15 +38,26 @@ export function makeIndoor(size: string, settings: Settings, meters = "3", id = 
   };
 }
 
+export function listMountPrice(settings: Settings, mount: "ground" | "wall"): string {
+  return (mount === "ground" ? settings.mountGround : settings.mountWall) || "";
+}
+
 export function makeOutdoor(size: string, settings: Settings, meters = "3", id = nid("out")): OutdoorUnit {
   return {
     id,
     size,
     mount: "wall",
     mountQty: "1",
-    mountPrice: "",
+    mountPrice: listMountPrice(settings, "wall"),
     indoors: [makeIndoor(size, settings, meters)],
   };
+}
+
+/** Keep a hand-typed price. A list price follows the mount choice. */
+export function withMount(outdoor: OutdoorUnit, mount: "ground" | "wall", settings: Settings): OutdoorUnit {
+  const previous = listMountPrice(settings, outdoor.mount);
+  const keep = outdoor.mountPrice.trim() !== "" && outdoor.mountPrice !== previous;
+  return { ...outdoor, mount, mountPrice: keep ? outdoor.mountPrice : listMountPrice(settings, mount) };
 }
 
 /** New offer: single split, 12k, 3 m, list prices. */
@@ -128,7 +139,43 @@ export function patchIndoor(systems: SplitSystem[], s: number, o: number, i: num
 }
 
 export function addIndoor(systems: SplitSystem[], s: number, o: number, settings: Settings): SplitSystem[] {
-  return patchOutdoor(systems, s, o, (outdoor) => ({ ...outdoor, indoors: [...outdoor.indoors, makeIndoor("12k", settings)] }));
+  return patchOutdoor(systems, s, o, (outdoor) => {
+    const size = outdoor.indoors[outdoor.indoors.length - 1]?.size || "12k";
+    return { ...outdoor, indoors: [...outdoor.indoors, makeIndoor(size, settings, "3")] };
+  });
+}
+
+export function setAllLengths(unit: IndoorUnit, meters: string): IndoorUnit {
+  return { ...unit, runM: meters, liquidM: meters, vaporM: meters, cable3M: meters, cable5M: meters, drainM: meters };
+}
+
+/** Cables and the drain keep the liquid length until they have been set apart. */
+export function setLiquidLength(unit: IndoorUnit, meters: string): IndoorUnit {
+  const previous = unit.liquidM;
+  const follow = (value: string) => (value === previous ? meters : value);
+  return { ...unit, liquidM: meters, runM: meters, cable3M: follow(unit.cable3M), cable5M: follow(unit.cable5M), drainM: follow(unit.drainM) };
+}
+
+export function sameLength(unit: IndoorUnit): boolean {
+  return [unit.liquidM, unit.vaporM, unit.cable3M, unit.cable5M, unit.drainM].every((value) => value === unit.liquidM);
+}
+
+export function lengthLabel(unit: IndoorUnit): string {
+  const liquid = num(unit.liquidM);
+  const vapor = num(unit.vaporM);
+  const rest = [num(unit.cable3M), num(unit.cable5M), num(unit.drainM)];
+  const all = [liquid, vapor, ...rest];
+  if (all.every((value) => value === all[0])) return `${all[0]} m`;
+  const restSame = rest.every((value) => value === rest[0]);
+  if (restSame && (rest[0] === liquid || rest[0] === vapor) && liquid !== vapor) return `${liquid}/${vapor} m`;
+  return `${Math.max(...all)} m*`;
+}
+
+export function missingPipePrices(unit: IndoorUnit): string[] {
+  const gaps: string[] = [];
+  if (num(unit.liquidM) > 0 && !(num(unit.liquidPrice) > 0)) gaps.push(`${unit.liquid}"`);
+  if (num(unit.vaporM) > 0 && !(num(unit.vaporPrice) > 0)) gaps.push(`${unit.vapor}"`);
+  return [...new Set(gaps)];
 }
 
 export function copyIndoor(systems: SplitSystem[], s: number, o: number, i: number): SplitSystem[] {
@@ -241,7 +288,7 @@ export function headSummary(unit: IndoorUnit): string {
     + lineAmount(unit.cable3M, unit.cable3Price)
     + lineAmount(unit.cable5M, unit.cable5Price)
     + lineAmount(unit.drainM, unit.drainPrice);
-  return `${unit.size || "—"} · ${unit.liquid}" + ${unit.vapor}" · ${unit.runM || "0"} m · ${Math.round(money).toLocaleString("en-US")} Lek`;
+  return `${unit.size || "—"} · ${unit.liquid}" + ${unit.vapor}" · ${lengthLabel(unit)} · ${Math.round(money).toLocaleString("en-US")} Lek`;
 }
 
 /** The list to show. Saved systems win. A quote with none is one single split at 0 m. */

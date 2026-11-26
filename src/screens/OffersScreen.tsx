@@ -72,6 +72,7 @@ export function OfferEditor({
           net={quote.net}
           vat={quote.vat}
           showVat={showVatBreakdown}
+          hasUnitPrice={quote.gross > 0}
           companyPhone={phone}
           tiers={[]}
         />

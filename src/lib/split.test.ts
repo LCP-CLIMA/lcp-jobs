@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildBackup, readBackup } from "./backup";
 import { createInstallJob, defaultSettings } from "./defaults";
 import { moneyTotals } from "./simple";
-import { applyIndoorSize, detailLines, freshSingle, makeIndoor, pipesFor, setPipe, setRun, systemRollup } from "./split";
+import { applyIndoorSize, detailLines, freshSingle, headSummary, makeIndoor, missingPipePrices, pipesFor, setLiquidLength, setPipe, setRun, systemRollup } from "./split";
 import type { OutdoorUnit, SplitSystem } from "./types";
 
 function head(size: string, liquidM: string, vaporM: string, restM: string, liquid: "1/4" | "3/8" | "1/2" | "5/8" | "3/4", vapor: "1/4" | "3/8" | "1/2" | "5/8" | "3/4") {
@@ -70,7 +70,7 @@ describe("multi split", () => {
     expect(job.money?.systems?.[0].kind).toBe("single");
     expect(job.money?.systems?.[0].outdoors[0].indoors[0].size).toBe("12k");
     expect(job.money?.systems?.[0].outdoors[0].indoors[0].runM).toBe("3");
-    expect(systemRollup(job.money?.systems).sell).toBe(2790);
+    expect(systemRollup(job.money?.systems).sell).toBe(4290);
   });
 
   it("leaves an older quote unchanged until the details are edited", () => {
@@ -80,6 +80,20 @@ describe("multi split", () => {
     expect(totals.sell).toBe(125000);
     expect(totals.cost).toBe(88000);
     expect(freshSingle(settings).kind).toBe("single");
+  });
+
+  it("names unequal pipe lengths instead of the old shared run", () => {
+    const unit = head("18k", "6", "7", "6", "1/4", "1/2");
+    const followed = setLiquidLength({ ...unit, liquidM: "8", vaporM: "8", cable3M: "8", cable5M: "8", drainM: "8" }, "6");
+    expect(followed.cable3M).toBe("6");
+    expect(followed.vaporM).toBe("8");
+    expect(headSummary(unit)).toContain("6/7 m");
+    expect(headSummary(unit)).not.toContain("8 m");
+  });
+
+  it("warns when a pipe size has no list price", () => {
+    const unit = setPipe(makeIndoor("12k", settings, "3", "gap"), "liquid", "3/4", settings);
+    expect(missingPipePrices(unit)).toEqual(['3/4"']);
   });
 
   it("survives a backup", async () => {

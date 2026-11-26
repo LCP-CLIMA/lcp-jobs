@@ -167,6 +167,9 @@ export function SettingsScreen({
           <Num label='1/2" Lek/m' value={settings.pipe["1/2"]} onChange={(value) => update({ pipe: { ...settings.pipe, "1/2": value } })} />
           <Num label='5/8" Lek/m' value={settings.pipe["5/8"]} onChange={(value) => update({ pipe: { ...settings.pipe, "5/8": value } })} />
           <Num label='3/4" Lek/m' value={settings.pipe["3/4"]} onChange={(value) => update({ pipe: { ...settings.pipe, "3/4": value } })} />
+          <p className="hint">3/4" mbetet bosh derisa ta vendosësh. Nëse një kokë e përdor, oferta e tregon.</p>
+          <Num label="Mbajtëse muri, Lek" value={settings.mountWall} onChange={(mountWall) => update({ mountWall })} />
+          <Num label="Basament toke, Lek" value={settings.mountGround} onChange={(mountGround) => update({ mountGround })} />
           <Num label="Kabllo 3x2.5, Lek/m" value={settings.cable3} onChange={(cable3) => update({ cable3 })} />
           <Num label="Kabllo 5x1.5, Lek/m" value={settings.cable5} onChange={(cable5) => update({ cable5 })} />
           <Num label="Zorrë drenazhi, Lek/m" value={settings.drain} onChange={(drain) => update({ drain })} />
